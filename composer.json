@@ -1,0 +1,34 @@
+{
+    "name": "innmind/lab-station",
+    "type": "library",
+    "description": "CLI tool to automate part of the development process",
+    "keywords": ["cli", "tool", "automation", "development"],
+    "homepage": "http://github.com/Innmind/LabStation",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Baptiste Langlade",
+            "email": "langlade.baptiste@gmail.com"
+        }
+    ],
+    "support": {
+        "issues": "http://github.com/Innmind/LabStation/issues"
+    },
+    "require": {
+        "php": "~7.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Innmind\\LabStation\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\Innmind\\LabStation\\": "tests/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~8.0",
+        "giorgiosironi/eris": "^0.11.0"
+    }
+}
