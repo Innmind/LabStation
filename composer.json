@@ -18,7 +18,8 @@
         "php": "~7.2",
         "innmind/url": "^2.0",
         "innmind/cli": "^1.7",
-        "innmind/operating-system": "^1.6"
+        "innmind/operating-system": "^1.6",
+        "innmind/json": "^1.1"
     },
     "autoload": {
         "psr-4": {
