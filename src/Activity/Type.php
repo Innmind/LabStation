@@ -22,6 +22,11 @@ final class Type
         return new self('tests.modified');
     }
 
+    public static function start(): self
+    {
+        return new self('start');
+    }
+
     public function equals(self $other): bool
     {
         return $this->value === $other->value;
