@@ -27,7 +27,10 @@ final class Tests implements Trigger
 
     public function __invoke(Activity $activity, Environment $env): void
     {
-        if (!$activity->is(Type::sourcesModified())) {
+        if (
+            !$activity->is(Type::sourcesModified()) &&
+            !$activity->is(Type::testsModified())
+        ) {
             return;
         }
 
