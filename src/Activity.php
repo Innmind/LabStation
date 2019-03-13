@@ -21,6 +21,11 @@ final class Activity
         return $this->type->equals($type);
     }
 
+    public function type(): Type
+    {
+        return $this->type;
+    }
+
     public function data(): array
     {
         return $this->data;
