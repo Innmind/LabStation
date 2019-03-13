@@ -54,7 +54,7 @@ class TestsTest extends TestCase
             ->expects($this->once())
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === 'vendor/bin/phpunit' &&
+                return (string) $command === "vendor/bin/phpunit '--colors=always'" &&
                     $command->workingDirectory() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
@@ -108,7 +108,7 @@ class TestsTest extends TestCase
             ->expects($this->once())
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === 'vendor/bin/phpunit' &&
+                return (string) $command === "vendor/bin/phpunit '--colors=always'" &&
                     $command->workingDirectory() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
