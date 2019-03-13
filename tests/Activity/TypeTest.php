@@ -13,6 +13,9 @@ class TypeTest extends TestCase
         $this->assertInstanceOf(Type::class, Type::sourcesModified());
         $this->assertInstanceOf(Type::class, Type::start());
         $this->assertInstanceOf(Type::class, Type::testsModified());
+        $this->assertSame('sourcesModified', (string) Type::sourcesModified());
+        $this->assertSame('start', (string) Type::start());
+        $this->assertSame('testsModified', (string) Type::testsModified());
         $this->assertTrue(Type::sourcesModified()->equals(Type::sourcesModified()));
         $this->assertTrue(Type::start()->equals(Type::start()));
         $this->assertTrue(Type::testsModified()->equals(Type::testsModified()));

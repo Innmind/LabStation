@@ -14,12 +14,12 @@ final class Type
 
     public static function sourcesModified(): self
     {
-        return new self('sources.modified');
+        return new self('sourcesModified');
     }
 
     public static function testsModified(): self
     {
-        return new self('tests.modified');
+        return new self('testsModified');
     }
 
     public static function start(): self
@@ -30,5 +30,10 @@ final class Type
     public function equals(self $other): bool
     {
         return $this->value === $other->value;
+    }
+
+    public function __toString(): string
+    {
+        return $this->value;
     }
 }
