@@ -20,7 +20,9 @@
         "innmind/cli": "^1.7",
         "innmind/operating-system": "^1.6",
         "innmind/json": "^1.1",
-        "symfony/dotenv": "^4.2"
+        "symfony/dotenv": "^4.2",
+        "innmind/file-watch": "^1.1",
+        "innmind/ipc": "^2.1"
     },
     "autoload": {
         "psr-4": {
