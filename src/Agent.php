@@ -3,7 +3,7 @@ declare(strict_types = 1);
 
 namespace Innmind\LabStation;
 
-use Innmind\Url\PathInterface
+use Innmind\Url\PathInterface;
 
 interface Agent
 {
