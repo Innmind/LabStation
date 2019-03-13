@@ -46,10 +46,22 @@ final class Tests implements Trigger
             ->output()
             ->foreach(static function(Str $line, Output\Type $type) use ($output, $error): void {
                 if ($type === Output\Type::output()) {
-                    $output->write($line);
+                    $stream = $output;
                 } else {
-                    $error->write($line);
+                    $stream = $error;
                 }
+
+                if (!$line->contains("\n")) {
+                    $stream->write($line);
+
+                    return;
+                }
+
+                $lines = $line->split("\n");
+                $lines->dropEnd(1)->foreach(static function($line) use ($stream): void {
+                    $stream->write($line->append("\n"));
+                });
+                $stream->write($lines->last());
             });
     }
 }
