@@ -46,6 +46,7 @@ function bootstrap(OperatingSystem $os): Commands
                         $os->control()->processes()
                     ),
                     new Trigger\Tests($os->control()->processes()),
+                    new Trigger\ComposerUpdate($os->control()->processes()),
                     new Trigger\GitRelease(
                         $git,
                         new Release,
