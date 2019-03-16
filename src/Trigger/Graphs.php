@@ -85,7 +85,11 @@ final class Graphs implements Trigger
         $process = $this->processes->execute($command)->wait();
 
         if (!$process->exitCode()->isSuccessful()) {
-            $error->write(Str::of((string) $process->output()));
+            $lines = Str::of((string) $process->output())->split("\n");
+            $lines->dropEnd(1)->foreach(static function($line) use ($error): void {
+                $error->write($line->append("\n"));
+            });
+            $error->write($lines->last());
 
             return;
         }
