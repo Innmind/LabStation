@@ -13,7 +13,10 @@ use Innmind\Server\Control\Server\{
     Processes,
     Command,
 };
-use Innmind\CLI\Environment;
+use Innmind\CLI\{
+    Environment,
+    Question\Question,
+};
 use Innmind\Json\Json;
 use Innmind\Url\PathInterface;
 use Innmind\Stream\Writable;
@@ -38,6 +41,13 @@ final class Graphs implements Trigger
     public function __invoke(Activity $activity, Environment $env): void
     {
         if (!$activity->is(Type::start())) {
+            return;
+        }
+
+        $ask = new Question('Render dependency graphs? [Y/n]');
+        $response = (string) $ask($env->input(), $env->output());
+
+        if (($response ?: 'Y') === 'n') {
             return;
         }
 

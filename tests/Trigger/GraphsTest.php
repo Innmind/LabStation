@@ -198,6 +198,20 @@ class GraphsTest extends TestCase
             ->expects($this->once())
             ->method('workingDirectory')
             ->willReturn(new Path('/somewhere'));
+        $input = \fopen('php://temp', 'r+');
+        \fwrite($input, "\n");
+        $env
+            ->expects($this->once())
+            ->method('input')
+            ->willReturn(new Readable\Stream($input));
+        $env
+            ->expects($this->once())
+            ->method('output')
+            ->willReturn($output = $this->createMock(Writable::class));
+        $output
+            ->expects($this->once())
+            ->method('write')
+            ->with(Str::of('Render dependency graphs? [Y/n] '));
 
         $this->assertNull($trigger(
             new Activity(Type::start(), []),
@@ -259,6 +273,24 @@ class GraphsTest extends TestCase
             ->expects($this->once())
             ->method('workingDirectory')
             ->willReturn(new Path('/somewhere'));
+        $env
+            ->expects($this->once())
+            ->method('workingDirectory')
+            ->willReturn(new Path('/somewhere'));
+        $input = \fopen('php://temp', 'r+');
+        \fwrite($input, "\n");
+        $env
+            ->expects($this->once())
+            ->method('input')
+            ->willReturn(new Readable\Stream($input));
+        $env
+            ->expects($this->once())
+            ->method('output')
+            ->willReturn($output = $this->createMock(Writable::class));
+        $output
+            ->expects($this->once())
+            ->method('write')
+            ->with(Str::of('Render dependency graphs? [Y/n] '));
         $env
             ->expects($this->any())
             ->method('error')
@@ -337,6 +369,41 @@ class GraphsTest extends TestCase
         $process
             ->expects($this->once())
             ->method('wait');
+
+        $this->assertNull($trigger(
+            new Activity(Type::start(), []),
+            $env
+        ));
+    }
+
+    public function testDoesntOpenDependencyGraphsWhenAnsweringByTheNegative()
+    {
+        $trigger = new Graphs(
+            $filesystem = $this->createMock(Filesystem::class),
+            $processes = $this->createMock(Processes::class),
+            new Path('/tmp/folder')
+        );
+        $filesystem
+            ->expects($this->never())
+            ->method('mount');
+        $processes
+            ->expects($this->never())
+            ->method('execute');
+        $env = $this->createMock(Environment::class);
+        $input = \fopen('php://temp', 'r+');
+        \fwrite($input, "n\n");
+        $env
+            ->expects($this->once())
+            ->method('input')
+            ->willReturn(new Readable\Stream($input));
+        $env
+            ->expects($this->once())
+            ->method('output')
+            ->willReturn($output = $this->createMock(Writable::class));
+        $output
+            ->expects($this->once())
+            ->method('write')
+            ->with(Str::of('Render dependency graphs? [Y/n] '));
 
         $this->assertNull($trigger(
             new Activity(Type::start(), []),
