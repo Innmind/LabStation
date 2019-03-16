@@ -7,6 +7,7 @@ use Innmind\LabStation\{
     Trigger,
     Activity,
     Activity\Type,
+    Exception\DontRelease,
 };
 use Innmind\CLI\{
     Environment,
@@ -19,6 +20,7 @@ use Innmind\Git\{
     Exception\DomainException,
 };
 use Innmind\GitRelease\{
+    Version,
     Release,
     LatestVersion,
 };
@@ -55,6 +57,24 @@ final class GitRelease implements Trigger
 
         $env->output()->write(Str::of("$version\n"));
 
+
+        try {
+            $newVersion = $this->askKind($env, $version);
+        } catch (DontRelease $e) {
+            return;
+        }
+
+        try {
+            $message = $this->askMessage($env);
+        } catch (DontRelease $e) {
+            return;
+        }
+
+        ($this->release)($repository, $newVersion, $message);
+    }
+
+    private function askKind(Environment $env, Version $version): Version
+    {
         $ask = new ChoiceQuestion(
             'Kind of release:',
             Map::of('scalar', 'scalar')
@@ -66,36 +86,33 @@ final class GitRelease implements Trigger
         $response = $ask($env->input(), $env->output());
 
         if ($response->empty()) {
-            return;
+            throw new DontRelease;
         }
 
         switch ($response->current()) {
             case 'major':
-                $version = $version->increaseMajor();
-                break;
+                return $version->increaseMajor();
 
             case 'minor':
-                $version = $version->increaseMinor();
-                break;
+                return $version->increaseMinor();
 
             case 'bugfix':
-                $version = $version->increaseBugfix();
-                break;
-
-            default:
-                return;
+                return $version->increaseBugfix();
         }
 
+        throw new DontRelease;
+    }
+
+    private function askMessage(Environment $env): Message
+    {
         $message = (new Question('message:'))($env->input(), $env->output());
 
         try {
-            $message = new Message((string) $message);
+            return new Message((string) $message);
         } catch (DomainException $e) {
             $env->error()->write(Str::of("Invalid message\n"));
 
-            return;
+            throw new DontRelease;
         }
-
-        ($this->release)($repository, $version, $message);
     }
 }
