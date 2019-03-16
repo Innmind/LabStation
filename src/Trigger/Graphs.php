@@ -47,7 +47,7 @@ final class Graphs implements Trigger
         $ask = new Question('Render dependency graphs? [Y/n]');
         $response = (string) $ask($env->input(), $env->output());
 
-        if (($response ?: 'Y') === 'n') {
+        if (($response ?: 'y') === 'n') {
             return;
         }
 
