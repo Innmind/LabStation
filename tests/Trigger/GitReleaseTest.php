@@ -163,7 +163,7 @@ class GitReleaseTest extends TestCase
         $output
             ->expects($this->at(0))
             ->method('write')
-            ->with(Str::of("1.0.0\n"));
+            ->with(Str::of("Current release: 1.0.0\n"));
         $output
             ->expects($this->at(1))
             ->method('write')
@@ -265,7 +265,7 @@ class GitReleaseTest extends TestCase
         $output
             ->expects($this->at(0))
             ->method('write')
-            ->with(Str::of("1.0.0\n"));
+            ->with(Str::of("Current release: 1.0.0\n"));
         $output
             ->expects($this->at(1))
             ->method('write')
@@ -367,7 +367,7 @@ class GitReleaseTest extends TestCase
         $output
             ->expects($this->at(0))
             ->method('write')
-            ->with(Str::of("1.0.0\n"));
+            ->with(Str::of("Current release: 1.0.0\n"));
         $output
             ->expects($this->at(1))
             ->method('write')
@@ -394,6 +394,10 @@ class GitReleaseTest extends TestCase
             ->with(Str::of('> '));
         $output
             ->expects($this->at(7))
+            ->method('write')
+            ->with(Str::of("Next release: 2.0.0\n"));
+        $output
+            ->expects($this->at(8))
             ->method('write')
             ->with(Str::of('message: '));
         $firstInput = \fopen('php://temp', 'r+');
@@ -525,7 +529,7 @@ class GitReleaseTest extends TestCase
         $output
             ->expects($this->at(0))
             ->method('write')
-            ->with(Str::of("1.0.0\n"));
+            ->with(Str::of("Current release: 1.0.0\n"));
         $output
             ->expects($this->at(1))
             ->method('write')
@@ -552,6 +556,10 @@ class GitReleaseTest extends TestCase
             ->with(Str::of('> '));
         $output
             ->expects($this->at(7))
+            ->method('write')
+            ->with(Str::of("Next release: $expected\n"));
+        $output
+            ->expects($this->at(8))
             ->method('write')
             ->with(Str::of('message: '));
         $firstInput = \fopen('php://temp', 'r+');

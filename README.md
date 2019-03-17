@@ -14,6 +14,8 @@ Automatisations:
 - Launch PHPUnit tests when `src` or `tests` folders are modified
 - Ask for the kind of tag to create when branch is changed to `master`
 
+![](example.gif)
+
 ## Installation
 
 ```sh

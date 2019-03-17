@@ -55,14 +55,15 @@ final class GitRelease implements Trigger
         $repository = $this->git->repository($env->workingDirectory());
         $version = ($this->latestVersion)($repository);
 
-        $env->output()->write(Str::of("$version\n"));
-
+        $env->output()->write(Str::of("Current release: $version\n"));
 
         try {
             $newVersion = $this->askKind($env, $version);
         } catch (DontRelease $e) {
             return;
         }
+
+        $env->output()->write(Str::of("Next release: $newVersion\n"));
 
         try {
             $message = $this->askMessage($env);
