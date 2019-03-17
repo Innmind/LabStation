@@ -55,22 +55,10 @@ final class ComposerUpdate implements Trigger
             ->output()
             ->foreach(static function(Str $line, Output\Type $type) use ($output, $error): void {
                 if ($type === Output\Type::output()) {
-                    $stream = $output;
+                    $output->write($line);
                 } else {
-                    $stream = $error;
+                    $error->write($line);
                 }
-
-                if (!$line->contains("\n")) {
-                    $stream->write($line);
-
-                    return;
-                }
-
-                $lines = $line->split("\n");
-                $lines->dropEnd(1)->foreach(static function($line) use ($stream): void {
-                    $stream->write($line->append("\n"));
-                });
-                $stream->write($lines->last());
             });
     }
 }

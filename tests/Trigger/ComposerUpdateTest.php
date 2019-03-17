@@ -100,11 +100,11 @@ class ComposerUpdateTest extends TestCase
         $output
             ->expects($this->at(1))
             ->method('write')
-            ->with(Str::of('some output', 'UTF-8'));
+            ->with(Str::of('some output'));
         $error
             ->expects($this->once())
             ->method('write')
-            ->with(Str::of('some error', 'UTF-8'));
+            ->with(Str::of('some error'));
 
         $this->assertNull($trigger(
             new Activity(Type::start(), []),
@@ -135,65 +135,6 @@ class ComposerUpdateTest extends TestCase
             ->expects($this->once())
             ->method('write')
             ->with(Str::of('Update dependencies? [Y/n] '));
-
-        $this->assertNull($trigger(
-            new Activity(Type::start(), []),
-            $env
-        ));
-    }
-
-    public function testMultilineOutputIsDisplayedInMutipleTimes()
-    {
-        $trigger = new ComposerUpdate(
-            $processes = $this->createMock(Processes::class)
-        );
-        $processes
-            ->expects($this->once())
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return (string) $command === "composer '--ansi' 'update'" &&
-                    $command->workingDirectory() === '/somewhere';
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
-        $process
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn($output = $this->createMock(Output::class));
-        $output
-            ->expects($this->once())
-            ->method('foreach')
-            ->with($this->callback(static function($listen): bool {
-                $listen(Str::of("some\noutput"), Output\Type::output());
-
-                return true;
-            }));
-        $env = $this->createMock(Environment::class);
-        $env
-            ->expects($this->once())
-            ->method('workingDirectory')
-            ->willReturn(new Path('/somewhere'));
-        $input = \fopen('php://temp', 'r+');
-        \fwrite($input, "\n");
-        $env
-            ->expects($this->once())
-            ->method('input')
-            ->willReturn(new Readable\Stream($input));
-        $env
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn($output = $this->createMock(Writable::class));
-        $output
-            ->expects($this->at(0))
-            ->method('write')
-            ->with(Str::of('Update dependencies? [Y/n] '));
-        $output
-            ->expects($this->at(1))
-            ->method('write')
-            ->with(Str::of("some\n", 'UTF-8'));
-        $output
-            ->expects($this->at(2))
-            ->method('write')
-            ->with(Str::of('output', 'UTF-8'));
 
         $this->assertNull($trigger(
             new Activity(Type::start(), []),
