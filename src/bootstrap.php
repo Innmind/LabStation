@@ -12,7 +12,7 @@ use Innmind\ProcessManager\{
 use Innmind\IPC\Process\Name;
 use Innmind\Git\Git;
 use Innmind\GitRelease\{
-    Release,
+    SignedRelease,
     LatestVersion,
 };
 use function Innmind\FileWatch\bootstrap as watch;
@@ -49,7 +49,7 @@ function bootstrap(OperatingSystem $os): Commands
                     new Trigger\ComposerUpdate($os->control()->processes()),
                     new Trigger\GitRelease(
                         $git,
-                        new Release,
+                        new SignedRelease,
                         new LatestVersion
                     )
                 ),

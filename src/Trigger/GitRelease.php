@@ -21,7 +21,7 @@ use Innmind\Git\{
 };
 use Innmind\GitRelease\{
     Version,
-    Release,
+    SignedRelease,
     LatestVersion,
 };
 use Innmind\Immutable\{
@@ -35,7 +35,7 @@ final class GitRelease implements Trigger
     private $release;
     private $latestVersion;
 
-    public function __construct(Git $git, Release $release, LatestVersion $latestVersion)
+    public function __construct(Git $git, SignedRelease $release, LatestVersion $latestVersion)
     {
         $this->git = $git;
         $this->release = $release;

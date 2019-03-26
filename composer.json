@@ -24,7 +24,7 @@
         "innmind/file-watch": "^1.1",
         "innmind/ipc": "^2.1",
         "innmind/process-manager": "^2.1",
-        "innmind/git-release": "^1.0"
+        "innmind/git-release": "^1.2"
     },
     "autoload": {
         "psr-4": {
