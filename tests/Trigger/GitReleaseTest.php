@@ -11,7 +11,7 @@ use Innmind\LabStation\{
 };
 use Innmind\Git\Git;
 use Innmind\GitRelease\{
-    Release,
+    SignedRelease as Release,
     LatestVersion,
 };
 use Innmind\Server\Control\{
