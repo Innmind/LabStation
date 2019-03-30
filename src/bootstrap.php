@@ -24,7 +24,7 @@ function bootstrap(OperatingSystem $os): Commands
     $watch = watch($os);
     $ipc = ipc($os);
     $monitor = new Name('lab-station-'.$os->process()->id());
-    $git = new Git($os->control());
+    $git = new Git($os->control(), $os->clock());
 
     return new Commands(
         new Command\Work(
@@ -42,6 +42,10 @@ function bootstrap(OperatingSystem $os): Commands
                         $os->status()->tmp()
                     ),
                     new Trigger\Profiler(
+                        $os->filesystem(),
+                        $os->control()->processes()
+                    ),
+                    new Trigger\DockerCompose(
                         $os->filesystem(),
                         $os->control()->processes()
                     ),

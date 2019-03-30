@@ -27,6 +27,10 @@ use Innmind\Stream\{
     Writable,
 };
 use Innmind\Url\Path;
+use Innmind\TimeContinuum\{
+    TimeContinuum\Earth,
+    Timezone\Earth\UTC,
+};
 use Innmind\Immutable\Str;
 use PHPUnit\Framework\TestCase;
 use Eris\{
@@ -43,7 +47,7 @@ class GitReleaseTest extends TestCase
         $this->assertInstanceOf(
             Trigger::class,
             new GitRelease(
-                new Git($this->createMock(Server::class)),
+                new Git($this->createMock(Server::class), new Earth(new UTC)),
                 new Release,
                 new LatestVersion
             )
@@ -54,7 +58,8 @@ class GitReleaseTest extends TestCase
     {
         $trigger = new GitRelease(
             new Git(
-                $server = $this->createMock(Server::class)
+                $server = $this->createMock(Server::class),
+                new Earth(new UTC)
             ),
             new Release,
             new LatestVersion
@@ -81,7 +86,8 @@ class GitReleaseTest extends TestCase
     {
         $trigger = new GitRelease(
             new Git(
-                $server = $this->createMock(Server::class)
+                $server = $this->createMock(Server::class),
+                new Earth(new UTC)
             ),
             new Release,
             new LatestVersion
@@ -104,7 +110,8 @@ class GitReleaseTest extends TestCase
     {
         $trigger = new GitRelease(
             new Git(
-                $server = $this->createMock(Server::class)
+                $server = $this->createMock(Server::class),
+                new Earth(new UTC)
             ),
             new Release,
             new LatestVersion
@@ -132,7 +139,7 @@ class GitReleaseTest extends TestCase
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "git 'tag' '--list' '--format=%(refname:strip=2)|||%(subject)'";
+                return (string) $command === "git 'tag' '--list' '--format=%(refname:strip=2)|||%(subject)|||%(creatordate:rfc2822)'";
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -150,7 +157,7 @@ class GitReleaseTest extends TestCase
         $output
             ->expects($this->once())
             ->method('__toString')
-            ->willReturn('1.0.0|||foo');
+            ->willReturn('1.0.0|||foo|||Mon, 15 Aug 2005 15:52:01 +0000');
         $env = $this->createMock(Environment::class);
         $env
             ->expects($this->once())
@@ -206,7 +213,8 @@ class GitReleaseTest extends TestCase
     {
         $trigger = new GitRelease(
             new Git(
-                $server = $this->createMock(Server::class)
+                $server = $this->createMock(Server::class),
+                new Earth(new UTC)
             ),
             new Release,
             new LatestVersion
@@ -234,7 +242,7 @@ class GitReleaseTest extends TestCase
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "git 'tag' '--list' '--format=%(refname:strip=2)|||%(subject)'";
+                return (string) $command === "git 'tag' '--list' '--format=%(refname:strip=2)|||%(subject)|||%(creatordate:rfc2822)'";
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -252,7 +260,7 @@ class GitReleaseTest extends TestCase
         $output
             ->expects($this->once())
             ->method('__toString')
-            ->willReturn('1.0.0|||foo');
+            ->willReturn('1.0.0|||foo|||Mon, 15 Aug 2005 15:52:01 +0000');
         $env = $this->createMock(Environment::class);
         $env
             ->expects($this->once())
@@ -308,7 +316,8 @@ class GitReleaseTest extends TestCase
     {
         $trigger = new GitRelease(
             new Git(
-                $server = $this->createMock(Server::class)
+                $server = $this->createMock(Server::class),
+                new Earth(new UTC)
             ),
             new Release,
             new LatestVersion
@@ -336,7 +345,7 @@ class GitReleaseTest extends TestCase
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "git 'tag' '--list' '--format=%(refname:strip=2)|||%(subject)'";
+                return (string) $command === "git 'tag' '--list' '--format=%(refname:strip=2)|||%(subject)|||%(creatordate:rfc2822)'";
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -354,7 +363,7 @@ class GitReleaseTest extends TestCase
         $output
             ->expects($this->once())
             ->method('__toString')
-            ->willReturn('1.0.0|||foo');
+            ->willReturn('1.0.0|||foo|||Mon, 15 Aug 2005 15:52:01 +0000');
         $env = $this->createMock(Environment::class);
         $env
             ->expects($this->once())
@@ -425,7 +434,8 @@ class GitReleaseTest extends TestCase
     {
         $trigger = new GitRelease(
             new Git(
-                $server = $this->createMock(Server::class)
+                $server = $this->createMock(Server::class),
+                new Earth(new UTC)
             ),
             new Release,
             new LatestVersion
@@ -453,7 +463,7 @@ class GitReleaseTest extends TestCase
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "git 'tag' '--list' '--format=%(refname:strip=2)|||%(subject)'";
+                return (string) $command === "git 'tag' '--list' '--format=%(refname:strip=2)|||%(subject)|||%(creatordate:rfc2822)'";
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -471,7 +481,7 @@ class GitReleaseTest extends TestCase
         $output
             ->expects($this->once())
             ->method('__toString')
-            ->willReturn('1.0.0|||foo');
+            ->willReturn('1.0.0|||foo|||Mon, 15 Aug 2005 15:52:01 +0000');
         $processes
             ->expects($this->at(2))
             ->method('execute')
