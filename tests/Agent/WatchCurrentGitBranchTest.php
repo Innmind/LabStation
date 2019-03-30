@@ -23,6 +23,10 @@ use Innmind\IPC\{
 use Innmind\Server\Control\Server;
 use Innmind\Url\Path;
 use Innmind\Git\Git;
+use Innmind\TimeContinuum\{
+    TimeContinuum\Earth,
+    Timezone\Earth\UTC,
+};
 use PHPUnit\Framework\TestCase;
 
 class WatchCurrentGitBranchTest extends TestCase
@@ -33,7 +37,8 @@ class WatchCurrentGitBranchTest extends TestCase
             Agent::class,
             new WatchCurrentGitBranch(
                 new Git(
-                    $this->createMock(Server::class)
+                    $this->createMock(Server::class),
+                    new Earth(new UTC)
                 ),
                 $this->createMock(Protocol::class),
                 $this->createMock(Watch::class),
@@ -47,7 +52,8 @@ class WatchCurrentGitBranchTest extends TestCase
     {
         $agent = new WatchCurrentGitBranch(
             new Git(
-                $server = $this->createMock(Server::class)
+                $server = $this->createMock(Server::class),
+                new Earth(new UTC)
             ),
             $protocol = $this->createMock(Protocol::class),
             $watch = $this->createMock(Watch::class),
@@ -199,7 +205,8 @@ class WatchCurrentGitBranchTest extends TestCase
     {
         $agent = new WatchCurrentGitBranch(
             new Git(
-                $server = $this->createMock(Server::class)
+                $server = $this->createMock(Server::class),
+                new Earth(new UTC)
             ),
             $protocol = $this->createMock(Protocol::class),
             $watch = $this->createMock(Watch::class),
