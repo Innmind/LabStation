@@ -45,6 +45,10 @@ function bootstrap(OperatingSystem $os): Commands
                         $os->filesystem(),
                         $os->control()->processes()
                     ),
+                    new Trigger\DockerCompose(
+                        $os->filesystem(),
+                        $os->control()->processes()
+                    ),
                     new Trigger\Tests($os->control()->processes()),
                     new Trigger\ComposerUpdate($os->control()->processes()),
                     new Trigger\GitRelease(
