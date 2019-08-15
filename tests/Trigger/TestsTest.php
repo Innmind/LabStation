@@ -13,11 +13,15 @@ use Innmind\Server\Control\Server\{
     Processes,
     Process,
     Process\Output,
+    Process\ExitCode,
 };
 use Innmind\CLI\Environment;
 use Innmind\Stream\Writable;
 use Innmind\Url\Path;
-use Innmind\Immutable\Str;
+use Innmind\Immutable\{
+    Stream,
+    Str,
+};
 use PHPUnit\Framework\TestCase;
 
 class TestsTest extends TestCase
@@ -51,7 +55,7 @@ class TestsTest extends TestCase
             $processes = $this->createMock(Processes::class)
         );
         $processes
-            ->expects($this->once())
+            ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
                 return (string) $command === "vendor/bin/phpunit '--colors=always'" &&
@@ -70,6 +74,20 @@ class TestsTest extends TestCase
                 $listen(Str::of('some error'), Output\Type::error());
 
                 return true;
+            }));
+        $process
+            ->expects($this->once())
+            ->method('wait')
+            ->will($this->returnSelf());
+        $process
+            ->expects($this->once())
+            ->method('exitCode')
+            ->willReturn(new ExitCode(0));
+        $processes
+            ->expects($this->at(1))
+            ->method('execute')
+            ->with($this->callback(static function($command): bool {
+                return (string) $command === "say 'PHPUnit : ok'";
             }));
         $env = $this->createMock(Environment::class);
         $env
@@ -105,7 +123,7 @@ class TestsTest extends TestCase
             $processes = $this->createMock(Processes::class)
         );
         $processes
-            ->expects($this->once())
+            ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
                 return (string) $command === "vendor/bin/phpunit '--colors=always'" &&
@@ -124,6 +142,20 @@ class TestsTest extends TestCase
                 $listen(Str::of('some error'), Output\Type::error());
 
                 return true;
+            }));
+        $process
+            ->expects($this->once())
+            ->method('wait')
+            ->will($this->returnSelf());
+        $process
+            ->expects($this->once())
+            ->method('exitCode')
+            ->willReturn(new ExitCode(0));
+        $processes
+            ->expects($this->at(1))
+            ->method('execute')
+            ->with($this->callback(static function($command): bool {
+                return (string) $command === "say 'PHPUnit : ok'";
             }));
         $env = $this->createMock(Environment::class);
         $env
@@ -149,6 +181,91 @@ class TestsTest extends TestCase
 
         $this->assertNull($trigger(
             new Activity(Type::testsModified(), []),
+            $env
+        ));
+    }
+
+    public function testSaidMessageIsChangedWhenTestsAreFailing()
+    {
+        $trigger = new Tests(
+            $processes = $this->createMock(Processes::class)
+        );
+        $processes
+            ->expects($this->at(0))
+            ->method('execute')
+            ->with($this->callback(static function($command): bool {
+                return (string) $command === "vendor/bin/phpunit '--colors=always'" &&
+                    $command->workingDirectory() === '/somewhere';
+            }))
+            ->willReturn($process = $this->createMock(Process::class));
+        $process
+            ->expects($this->once())
+            ->method('output')
+            ->willReturn($output = $this->createMock(Output::class));
+        $output
+            ->expects($this->once())
+            ->method('foreach')
+            ->with($this->callback(static function($listen): bool {
+                return true;
+            }));
+        $process
+            ->expects($this->once())
+            ->method('wait')
+            ->will($this->returnSelf());
+        $process
+            ->expects($this->once())
+            ->method('exitCode')
+            ->willReturn(new ExitCode(1));
+        $processes
+            ->expects($this->at(1))
+            ->method('execute')
+            ->with($this->callback(static function($command): bool {
+                return (string) $command === "say 'PHPUnit : failing'";
+            }));
+        $env = $this->createMock(Environment::class);
+        $env
+            ->expects($this->once())
+            ->method('workingDirectory')
+            ->willReturn(new Path('/somewhere'));
+
+        $this->assertNull($trigger(
+            new Activity(Type::sourcesModified(), []),
+            $env
+        ));
+    }
+
+    public function testNoMessageIsSpokenWhenUsingTheSilentOption()
+    {
+        $trigger = new Tests(
+            $processes = $this->createMock(Processes::class)
+        );
+        $processes
+            ->expects($this->at(0))
+            ->method('execute')
+            ->with($this->callback(static function($command): bool {
+                return (string) $command === "vendor/bin/phpunit '--colors=always'" &&
+                    $command->workingDirectory() === '/somewhere';
+            }))
+            ->willReturn($process = $this->createMock(Process::class));
+        $process
+            ->expects($this->once())
+            ->method('output')
+            ->willReturn($output = $this->createMock(Output::class));
+        $output
+            ->expects($this->once())
+            ->method('foreach');
+        $env = $this->createMock(Environment::class);
+        $env
+            ->expects($this->once())
+            ->method('workingDirectory')
+            ->willReturn(new Path('/somewhere'));
+        $env
+            ->expects($this->once())
+            ->method('arguments')
+            ->willReturn(Stream::of('string', '--silent'));
+
+        $this->assertNull($trigger(
+            new Activity(Type::sourcesModified(), []),
             $env
         ));
     }

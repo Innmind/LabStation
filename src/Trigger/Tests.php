@@ -37,13 +37,14 @@ final class Tests implements Trigger
         $output = $env->output();
         $error = $env->error();
 
-        $this
+        $process = $this
             ->processes
             ->execute(
                 Command::foreground('vendor/bin/phpunit')
                     ->withOption('colors', 'always')
                     ->withWorkingDirectory((string) $env->workingDirectory())
-            )
+            );
+        $process
             ->output()
             ->foreach(static function(Str $line, Output\Type $type) use ($output, $error): void {
                 if ($type === Output\Type::output()) {
@@ -52,5 +53,21 @@ final class Tests implements Trigger
                     $error->write($line);
                 }
             });
+
+        if ($env->arguments()->contains('--silent')) {
+            return;
+        }
+
+        $successful = $process->wait()->exitCode()->isSuccessful();
+
+        $text = 'PHPUnit : ';
+        $text .= $successful ? 'ok' : 'failing';
+
+        $this
+            ->processes
+            ->execute(
+                Command::foreground('say')
+                    ->withArgument($text)
+            );
     }
 }
