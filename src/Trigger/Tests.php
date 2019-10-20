@@ -53,13 +53,13 @@ final class Tests implements Trigger
                     $error->write($line);
                 }
             });
+        $process->wait();
 
         if ($env->arguments()->contains('--silent')) {
             return;
         }
 
-        $successful = $process->wait()->exitCode()->isSuccessful();
-
+        $successful = $process->exitCode()->isSuccessful();
         $text = 'PHPUnit : ';
         $text .= $successful ? 'ok' : 'failing';
 
@@ -68,6 +68,7 @@ final class Tests implements Trigger
             ->execute(
                 Command::foreground('say')
                     ->withArgument($text)
-            );
+            )
+            ->wait();
     }
 }
