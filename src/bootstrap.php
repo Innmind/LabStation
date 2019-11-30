@@ -50,6 +50,10 @@ function bootstrap(OperatingSystem $os): Commands
                         $os->control()->processes()
                     ),
                     new Trigger\Tests($os->control()->processes()),
+                    new Trigger\Psalm(
+                        $os->control()->processes(),
+                        $os->filesystem()
+                    ),
                     new Trigger\ComposerUpdate($os->control()->processes()),
                     new Trigger\GitRelease(
                         $git,
