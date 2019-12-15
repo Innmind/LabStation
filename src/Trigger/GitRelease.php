@@ -72,6 +72,7 @@ final class GitRelease implements Trigger
         }
 
         ($this->release)($repository, $newVersion, $message);
+        $env->output()->write(Str::of("Version released!\n"));
     }
 
     private function askKind(Environment $env, Version $version): Version
