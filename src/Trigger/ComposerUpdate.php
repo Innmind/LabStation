@@ -60,5 +60,6 @@ final class ComposerUpdate implements Trigger
                     $error->write($line);
                 }
             });
+        $output->write(Str::of("Dependencies updated!\n"));
     }
 }
