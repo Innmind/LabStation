@@ -19,6 +19,7 @@ final class Monitor
     private IPC $ipc;
     private Name $name;
     private Trigger $trigger;
+    /** @var list<Agent> */
     private array $agents;
 
     public function __construct(

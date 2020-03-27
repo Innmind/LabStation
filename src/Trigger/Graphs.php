@@ -93,6 +93,7 @@ final class Graphs implements Trigger
             ->mount($env->workingDirectory())
             ->get(new Name('composer.json'))
             ->content();
+        /** @var array{name: string} */
         $package = Json::decode($composer->toString());
 
         return Str::of($package['name']);

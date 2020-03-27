@@ -33,10 +33,11 @@ final class Json implements Protocol
             throw new UnknownMessage($message->content()->toString());
         }
 
+        /** @var array{type: string, data: array} */
         $content = Format::decode($message->content()->toString());
 
         return new Activity(
-            Type::{$content['type']}(),
+            Type::of($content['type']),
             $content['data']
         );
     }

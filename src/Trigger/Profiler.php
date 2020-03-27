@@ -65,6 +65,7 @@ final class Profiler implements Trigger
 
     private function start(File $file, Path $workingDirectory): void
     {
+        /** @var array{ENV?: string|bool, PROFILER?: string} */
         $env = $this->dotenv->parse($file->content()->toString());
 
         if (!\array_key_exists('DEBUG', $env)) {
