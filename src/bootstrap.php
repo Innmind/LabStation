@@ -10,15 +10,13 @@ use Innmind\ProcessManager\{
     Runner\SubProcess,
 };
 use Innmind\IPC\Process\Name;
-use function Innmind\FileWatch\bootstrap as watch;
 use function Innmind\IPC\bootstrap as ipc;
 
 function bootstrap(OperatingSystem $os): Commands
 {
     $protocol = new Protocol\Json;
-    $watch = watch($os);
     $ipc = ipc($os);
-    $monitor = new Name('lab-station-'.$os->process()->id());
+    $monitor = new Name('lab-station-'.$os->process()->id()->toString());
 
     return new Commands(
         new Command\Work(
@@ -33,6 +31,7 @@ function bootstrap(OperatingSystem $os): Commands
                     new Trigger\Graphs(
                         $os->filesystem(),
                         $os->control()->processes(),
+                        $os->sockets(),
                         $os->status()->tmp()
                     ),
                     new Trigger\Profiler(
@@ -48,17 +47,20 @@ function bootstrap(OperatingSystem $os): Commands
                         $os->control()->processes(),
                         $os->filesystem()
                     ),
-                    new Trigger\ComposerUpdate($os->control()->processes())
+                    new Trigger\ComposerUpdate(
+                        $os->control()->processes(),
+                        $os->sockets(),
+                    )
                 ),
                 new Agent\WatchSources(
                     $protocol,
-                    $watch,
+                    $os->filesystem(),
                     $ipc,
                     $monitor
                 ),
                 new Agent\WatchTests(
                     $protocol,
-                    $watch,
+                    $os->filesystem(),
                     $ipc,
                     $monitor
                 )

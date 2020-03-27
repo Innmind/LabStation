@@ -15,12 +15,16 @@ use Innmind\Server\Control\Server\{
     Process\Output,
 };
 use Innmind\CLI\Environment;
+use Innmind\OperatingSystem\Sockets;
 use Innmind\Stream\{
     Writable,
     Readable,
 };
 use Innmind\Url\Path;
-use Innmind\Immutable\Str;
+use Innmind\Immutable\{
+    Str,
+    Sequence,
+};
 use PHPUnit\Framework\TestCase;
 
 class ComposerUpdateTest extends TestCase
@@ -29,14 +33,18 @@ class ComposerUpdateTest extends TestCase
     {
         $this->assertInstanceOf(
             Trigger::class,
-            new ComposerUpdate($this->createMock(Processes::class))
+            new ComposerUpdate(
+                $this->createMock(Processes::class),
+                $this->createMock(Sockets::class),
+            )
         );
     }
 
     public function testDoNothingWhenNotOfExpectedType()
     {
         $trigger = new ComposerUpdate(
-            $processes = $this->createMock(Processes::class)
+            $processes = $this->createMock(Processes::class),
+            $this->createMock(Sockets::class),
         );
         $processes
             ->expects($this->never())
@@ -51,14 +59,15 @@ class ComposerUpdateTest extends TestCase
     public function testTriggerUpdateOnStart()
     {
         $trigger = new ComposerUpdate(
-            $processes = $this->createMock(Processes::class)
+            $processes = $this->createMock(Processes::class),
+            new Sockets\Unix,
         );
         $processes
             ->expects($this->once())
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "composer '--ansi' 'update'" &&
-                    $command->workingDirectory() === '/somewhere';
+                return $command->toString() === "composer '--ansi' 'update'" &&
+                    $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -76,9 +85,17 @@ class ComposerUpdateTest extends TestCase
             }));
         $env = $this->createMock(Environment::class);
         $env
+            ->expects($this->any())
+            ->method('interactive')
+            ->willReturn(true);
+        $env
+            ->expects($this->once())
+            ->method('arguments')
+            ->willReturn(Sequence::strings());
+        $env
             ->expects($this->once())
             ->method('workingDirectory')
-            ->willReturn(new Path('/somewhere'));
+            ->willReturn(Path::of('/somewhere'));
         $input = \fopen('php://temp', 'r+');
         \fwrite($input, "\n");
         $env
@@ -86,7 +103,7 @@ class ComposerUpdateTest extends TestCase
             ->method('input')
             ->willReturn(new Readable\Stream($input));
         $env
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('output')
             ->willReturn($output = $this->createMock(Writable::class));
         $env
@@ -115,12 +132,21 @@ class ComposerUpdateTest extends TestCase
     public function testDoesntTriggerUpdateWhenNegativeResponse()
     {
         $trigger = new ComposerUpdate(
-            $processes = $this->createMock(Processes::class)
+            $processes = $this->createMock(Processes::class),
+            new Sockets\Unix,
         );
         $processes
             ->expects($this->never())
             ->method('execute');
         $env = $this->createMock(Environment::class);
+        $env
+            ->expects($this->any())
+            ->method('interactive')
+            ->willReturn(true);
+        $env
+            ->expects($this->once())
+            ->method('arguments')
+            ->willReturn(Sequence::strings());
         $input = \fopen('php://temp', 'r+');
         \fwrite($input, "n\n");
         $env
@@ -128,7 +154,7 @@ class ComposerUpdateTest extends TestCase
             ->method('input')
             ->willReturn(new Readable\Stream($input));
         $env
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('output')
             ->willReturn($output = $this->createMock(Writable::class));
         $output

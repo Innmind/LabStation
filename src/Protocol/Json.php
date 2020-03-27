@@ -10,7 +10,7 @@ use Innmind\LabStation\{
     Exception\UnknownMessage,
 };
 use Innmind\IPC\Message;
-use Innmind\Filesystem\MediaType\MediaType;
+use Innmind\MediaType\MediaType;
 use Innmind\Json\Json as Format;
 use Innmind\Immutable\Str;
 
@@ -29,11 +29,11 @@ final class Json implements Protocol
 
     public function decode(Message $message): Activity
     {
-        if ((string) $message->mediaType() !== 'application/json') {
-            throw new UnknownMessage((string) $message->content());
+        if ($message->mediaType()->toString() !== 'application/json') {
+            throw new UnknownMessage($message->content()->toString());
         }
 
-        $content = Format::decode((string) $message->content());
+        $content = Format::decode($message->content()->toString());
 
         return new Activity(
             Type::{$content['type']}(),

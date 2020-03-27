@@ -25,7 +25,7 @@ final class Work implements Command
         ($this->monitor)($env);
     }
 
-    public function __toString(): string
+    public function toString(): string
     {
         return 'work';
     }

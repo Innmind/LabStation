@@ -12,6 +12,7 @@ use Innmind\CLI\{
     Environment,
     Question\Question,
 };
+use Innmind\OperatingSystem\Sockets;
 use Innmind\Server\Control\Server\{
     Processes,
     Command,
@@ -22,10 +23,12 @@ use Innmind\Immutable\Str;
 final class ComposerUpdate implements Trigger
 {
     private Processes $processes;
+    private Sockets $sockets;
 
-    public function __construct(Processes $processes)
+    public function __construct(Processes $processes, Sockets $sockets)
     {
         $this->processes = $processes;
+        $this->sockets = $sockets;
     }
 
     public function __invoke(Activity $activity, Environment $env): void
@@ -38,7 +41,7 @@ final class ComposerUpdate implements Trigger
         $error = $env->error();
 
         $ask = new Question('Update dependencies? [Y/n]');
-        $response = (string) $ask($env->input(), $output);
+        $response = $ask($env, $this->sockets)->toString();
 
         if (($response ?: 'y') === 'n') {
             return;
@@ -50,7 +53,7 @@ final class ComposerUpdate implements Trigger
                 Command::foreground('composer')
                     ->withOption('ansi')
                     ->withArgument('update')
-                    ->withWorkingDirectory((string) $env->workingDirectory())
+                    ->withWorkingDirectory($env->workingDirectory())
             )
             ->output()
             ->foreach(static function(Str $line, Output\Type $type) use ($output, $error): void {

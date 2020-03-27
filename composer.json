@@ -16,14 +16,13 @@
     },
     "require": {
         "php": "~7.4",
-        "innmind/url": "^2.0",
-        "innmind/cli": "^1.7",
-        "innmind/operating-system": "^1.6",
+        "innmind/url": "~3.3",
+        "innmind/cli": "~2.0",
+        "innmind/operating-system": "~2.0",
         "innmind/json": "^1.1",
-        "symfony/dotenv": "^4.2",
-        "innmind/file-watch": "^1.1",
-        "innmind/ipc": "^2.1",
-        "innmind/process-manager": "^2.1"
+        "symfony/dotenv": "~5.0",
+        "innmind/ipc": "~3.0",
+        "innmind/process-manager": "~3.0"
     },
     "autoload": {
         "psr-4": {

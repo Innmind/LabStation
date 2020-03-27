@@ -13,6 +13,7 @@ use Innmind\OperatingSystem\Filesystem;
 use Innmind\Filesystem\{
     Directory,
     File,
+    Name,
 };
 use Innmind\Server\Control\Server\{
     Processes,
@@ -20,7 +21,7 @@ use Innmind\Server\Control\Server\{
 };
 use Innmind\Url\{
     Url,
-    PathInterface,
+    Path,
 };
 use Symfony\Component\Dotenv\Dotenv;
 
@@ -45,26 +46,26 @@ final class Profiler implements Trigger
 
         $project = $this->filesystem->mount($env->workingDirectory());
 
-        if (!$project->has('config')) {
+        if (!$project->contains(new Name('config'))) {
             return;
         }
 
-        $config = $project->get('config');
+        $config = $project->get(new Name('config'));
 
         if (!$config instanceof Directory) {
             return;
         }
 
-        if (!$config->has('.env')) {
+        if (!$config->contains(new Name('.env'))) {
             return;
         }
 
-        $this->start($config->get('.env'), $env->workingDirectory());
+        $this->start($config->get(new Name('.env')), $env->workingDirectory());
     }
 
-    private function start(File $file, PathInterface $workingDirectory): void
+    private function start(File $file, Path $workingDirectory): void
     {
-        $env = $this->dotenv->parse((string) $file->content());
+        $env = $this->dotenv->parse($file->content()->toString());
 
         if (!\array_key_exists('DEBUG', $env)) {
             return;
@@ -78,14 +79,14 @@ final class Profiler implements Trigger
             return;
         }
 
-        $workingDirectory = \rtrim((string) $workingDirectory, '/');
+        $workingDirectory = \rtrim($workingDirectory->toString(), '/');
         $workingDirectory .= '/../profiler/public';
 
         $this->processes->execute(
             Command::background('php')
                 ->withShortOption('S')
-                ->withArgument((string) Url::fromString($env['PROFILER'])->authority())
-                ->withWorkingDirectory($workingDirectory)
+                ->withArgument(Url::of($env['PROFILER'])->authority()->toString())
+                ->withWorkingDirectory(Path::of($workingDirectory))
         );
     }
 }

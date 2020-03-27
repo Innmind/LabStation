@@ -14,6 +14,7 @@ use Innmind\Server\Control\Server\{
     Processes,
     Command,
 };
+use Innmind\Filesystem\Name;
 
 final class DockerCompose implements Trigger
 {
@@ -34,7 +35,7 @@ final class DockerCompose implements Trigger
 
         $project = $this->filesystem->mount($env->workingDirectory());
 
-        if (!$project->has('docker-compose.yml')) {
+        if (!$project->contains(new Name('docker-compose.yml'))) {
             return;
         }
 
@@ -42,7 +43,7 @@ final class DockerCompose implements Trigger
             Command::foreground('docker-compose')
                 ->withArgument('up')
                 ->withShortOption('d')
-                ->withWorkingDirectory((string) $env->workingDirectory())
+                ->withWorkingDirectory($env->workingDirectory())
         );
     }
 }

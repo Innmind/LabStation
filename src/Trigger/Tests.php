@@ -42,7 +42,7 @@ final class Tests implements Trigger
             ->execute(
                 Command::foreground('vendor/bin/phpunit')
                     ->withOption('colors', 'always')
-                    ->withWorkingDirectory((string) $env->workingDirectory())
+                    ->withWorkingDirectory($env->workingDirectory())
             );
         $process
             ->output()

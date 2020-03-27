@@ -10,10 +10,8 @@ use Innmind\LabStation\{
     Activity,
     Activity\Type,
 };
-use Innmind\FileWatch\{
-    Watch,
-    Ping,
-};
+use Innmind\OperatingSystem\Filesystem;
+use Innmind\FileWatch\Ping;
 use Innmind\IPC\{
     IPC,
     Message,
@@ -31,7 +29,7 @@ class WatchSourcesTest extends TestCase
             Agent::class,
             new WatchSources(
                 $this->createMock(Protocol::class),
-                $this->createMock(Watch::class),
+                $this->createMock(Filesystem::class),
                 $this->createMock(IPC::class),
                 new Name('foo')
             )
@@ -42,11 +40,11 @@ class WatchSourcesTest extends TestCase
     {
         $agent = new WatchSources(
             $protocol = $this->createMock(Protocol::class),
-            $watch = $this->createMock(Watch::class),
+            $filesystem = $this->createMock(Filesystem::class),
             $ipc = $this->createMock(IPC::class),
             $name = new Name('foo')
         );
-        $project = new Path('/vendor/package');
+        $project = Path::of('/vendor/package');
         $protocol
             ->expects($this->once())
             ->method('encode')
@@ -64,10 +62,10 @@ class WatchSourcesTest extends TestCase
         $process
             ->expects($this->once())
             ->method('close');
-        $watch
+        $filesystem
             ->expects($this->once())
-            ->method('__invoke')
-            ->with(new Path('/vendor/package/src'))
+            ->method('watch')
+            ->with(Path::of('/vendor/package/src'))
             ->willReturn($ping = $this->createMock(Ping::class));
         $ping
             ->expects($this->once())

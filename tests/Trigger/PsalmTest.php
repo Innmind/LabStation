@@ -19,9 +19,12 @@ use Innmind\CLI\Environment;
 use Innmind\Stream\Writable;
 use Innmind\Url\Path;
 use Innmind\OperatingSystem\Filesystem;
-use Innmind\Filesystem\Adapter;
+use Innmind\Filesystem\{
+    Adapter,
+    Name,
+};
 use Innmind\Immutable\{
-    Stream,
+    Sequence,
     Str,
 };
 use PHPUnit\Framework\TestCase;
@@ -67,16 +70,21 @@ class PsalmTest extends TestCase
             ->willReturn($directory = $this->createMock(Adapter::class));
         $directory
             ->expects($this->once())
-            ->method('has')
-            ->with('psalm.xml')
+            ->method('contains')
+            ->with(new Name('psalm.xml'))
             ->willReturn(false);
         $processes
             ->expects($this->never())
             ->method('execute');
+        $env = $this->createMock(Environment::class);
+        $env
+            ->expects($this->any())
+            ->method('workingDirectory')
+            ->willReturn(Path::none());
 
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $this->createMock(Environment::class)
+            $env,
         ));
     }
 
@@ -86,7 +94,7 @@ class PsalmTest extends TestCase
             $processes = $this->createMock(Processes::class),
             $filesystem = $this->createMock(Filesystem::class)
         );
-        $workingDirectory = new Path('/somewhere');
+        $workingDirectory = Path::of('/somewhere');
         $filesystem
             ->expects($this->once())
             ->method('mount')
@@ -94,15 +102,15 @@ class PsalmTest extends TestCase
             ->willReturn($directory = $this->createMock(Adapter::class));
         $directory
             ->expects($this->once())
-            ->method('has')
-            ->with('psalm.xml')
+            ->method('contains')
+            ->with(new Name('psalm.xml'))
             ->willReturn(true);
         $processes
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "vendor/bin/psalm" &&
-                    $command->workingDirectory() === '/somewhere';
+                return $command->toString() === "vendor/bin/psalm" &&
+                    $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -120,8 +128,7 @@ class PsalmTest extends TestCase
             }));
         $process
             ->expects($this->once())
-            ->method('wait')
-            ->will($this->returnSelf());
+            ->method('wait');
         $process
             ->expects($this->once())
             ->method('exitCode')
@@ -130,9 +137,13 @@ class PsalmTest extends TestCase
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "say 'Psalm : ok'";
+                return $command->toString() === "say 'Psalm : ok'";
             }));
         $env = $this->createMock(Environment::class);
+        $env
+            ->expects($this->once())
+            ->method('arguments')
+            ->willReturn(Sequence::strings());
         $env
             ->expects($this->any())
             ->method('workingDirectory')
@@ -166,7 +177,7 @@ class PsalmTest extends TestCase
             $processes = $this->createMock(Processes::class),
             $filesystem = $this->createMock(Filesystem::class)
         );
-        $workingDirectory = new Path('/somewhere');
+        $workingDirectory = Path::of('/somewhere');
         $filesystem
             ->expects($this->once())
             ->method('mount')
@@ -174,15 +185,15 @@ class PsalmTest extends TestCase
             ->willReturn($directory = $this->createMock(Adapter::class));
         $directory
             ->expects($this->once())
-            ->method('has')
-            ->with('psalm.xml')
+            ->method('contains')
+            ->with(new Name('psalm.xml'))
             ->willReturn(true);
         $processes
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "vendor/bin/psalm" &&
-                    $command->workingDirectory() === '/somewhere';
+                return $command->toString() === "vendor/bin/psalm" &&
+                    $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -200,8 +211,7 @@ class PsalmTest extends TestCase
             }));
         $process
             ->expects($this->once())
-            ->method('wait')
-            ->will($this->returnSelf());
+            ->method('wait');
         $process
             ->expects($this->once())
             ->method('exitCode')
@@ -210,9 +220,13 @@ class PsalmTest extends TestCase
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "say 'Psalm : ok'";
+                return $command->toString() === "say 'Psalm : ok'";
             }));
         $env = $this->createMock(Environment::class);
+        $env
+            ->expects($this->once())
+            ->method('arguments')
+            ->willReturn(Sequence::strings());
         $env
             ->expects($this->any())
             ->method('workingDirectory')
@@ -246,7 +260,7 @@ class PsalmTest extends TestCase
             $processes = $this->createMock(Processes::class),
             $filesystem = $this->createMock(Filesystem::class)
         );
-        $workingDirectory = new Path('/somewhere');
+        $workingDirectory = Path::of('/somewhere');
         $filesystem
             ->expects($this->once())
             ->method('mount')
@@ -254,15 +268,15 @@ class PsalmTest extends TestCase
             ->willReturn($directory = $this->createMock(Adapter::class));
         $directory
             ->expects($this->once())
-            ->method('has')
-            ->with('psalm.xml')
+            ->method('contains')
+            ->with(new Name('psalm.xml'))
             ->willReturn(true);
         $processes
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "vendor/bin/psalm" &&
-                    $command->workingDirectory() === '/somewhere';
+                return $command->toString() === "vendor/bin/psalm" &&
+                    $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -277,8 +291,7 @@ class PsalmTest extends TestCase
             }));
         $process
             ->expects($this->once())
-            ->method('wait')
-            ->will($this->returnSelf());
+            ->method('wait');
         $process
             ->expects($this->once())
             ->method('exitCode')
@@ -287,13 +300,17 @@ class PsalmTest extends TestCase
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "say 'Psalm : failing'";
+                return $command->toString() === "say 'Psalm : failing'";
             }));
         $env = $this->createMock(Environment::class);
         $env
             ->expects($this->any())
             ->method('workingDirectory')
             ->willReturn($workingDirectory);
+        $env
+            ->expects($this->once())
+            ->method('arguments')
+            ->willReturn(Sequence::strings());
 
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
@@ -307,7 +324,7 @@ class PsalmTest extends TestCase
             $processes = $this->createMock(Processes::class),
             $filesystem = $this->createMock(Filesystem::class)
         );
-        $workingDirectory = new Path('/somewhere');
+        $workingDirectory = Path::of('/somewhere');
         $filesystem
             ->expects($this->once())
             ->method('mount')
@@ -315,15 +332,15 @@ class PsalmTest extends TestCase
             ->willReturn($directory = $this->createMock(Adapter::class));
         $directory
             ->expects($this->once())
-            ->method('has')
-            ->with('psalm.xml')
+            ->method('contains')
+            ->with(new Name('psalm.xml'))
             ->willReturn(true);
         $processes
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "vendor/bin/psalm" &&
-                    $command->workingDirectory() === '/somewhere';
+                return $command->toString() === "vendor/bin/psalm" &&
+                    $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -341,7 +358,7 @@ class PsalmTest extends TestCase
         $env
             ->expects($this->once())
             ->method('arguments')
-            ->willReturn(Stream::of('string', '--silent'));
+            ->willReturn(Sequence::of('string', '--silent'));
 
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),

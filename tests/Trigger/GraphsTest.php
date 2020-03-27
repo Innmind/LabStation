@@ -10,26 +10,30 @@ use Innmind\LabStation\{
     Activity\Type,
 };
 use Innmind\CLI\Environment;
-use Innmind\OperatingSystem\Filesystem;
+use Innmind\OperatingSystem\{
+    Filesystem,
+    Sockets,
+};
 use Innmind\Server\Control\Server\{
     Processes,
     Process,
     Process\Output,
     Process\ExitCode,
 };
-use Innmind\Url\{
-    PathInterface,
-    Path,
-};
+use Innmind\Url\Path;
 use Innmind\Filesystem\{
     Adapter,
     File,
+    Name,
 };
 use Innmind\Stream\{
     Readable,
     Writable,
 };
-use Innmind\Immutable\Str;
+use Innmind\Immutable\{
+    Str,
+    Sequence,
+};
 use PHPUnit\Framework\TestCase;
 
 class GraphsTest extends TestCase
@@ -41,7 +45,8 @@ class GraphsTest extends TestCase
             new Graphs(
                 $this->createMock(Filesystem::class),
                 $this->createMock(Processes::class),
-                $this->createMock(PathInterface::class)
+                $this->createMock(Sockets::class),
+                Path::none(),
             )
         );
     }
@@ -51,7 +56,8 @@ class GraphsTest extends TestCase
         $trigger = new Graphs(
             $filesystem = $this->createMock(Filesystem::class),
             $this->createMock(Processes::class),
-                $this->createMock(PathInterface::class)
+            new Sockets\Unix,
+            Path::none(),
         );
         $filesystem
             ->expects($this->never())
@@ -68,17 +74,18 @@ class GraphsTest extends TestCase
         $trigger = new Graphs(
             $filesystem = $this->createMock(Filesystem::class),
             $processes = $this->createMock(Processes::class),
-            new Path('/tmp/folder')
+            new Sockets\Unix,
+            Path::of('/tmp/folder')
         );
         $filesystem
             ->expects($this->once())
             ->method('mount')
-            ->with(new Path('/somewhere'))
+            ->with(Path::of('/somewhere'))
             ->willReturn($project = $this->createMock(Adapter::class));
         $project
             ->expects($this->once())
             ->method('get')
-            ->with('composer.json')
+            ->with(new Name('composer.json'))
             ->willReturn($composer = $this->createMock(File::class));
         $composer
             ->expects($this->once())
@@ -86,14 +93,14 @@ class GraphsTest extends TestCase
             ->willReturn($content = $this->createMock(Readable::class));
         $content
             ->expects($this->once())
-            ->method('__toString')
+            ->method('toString')
             ->willReturn('{"name":"innmind/lab-station"}');
         $processes
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "dependency-graph 'depends-on' 'innmind/lab-station' 'innmind'" &&
-                    $command->workingDirectory() === '/tmp/folder';
+                return $command->toString() === "dependency-graph 'depends-on' 'innmind/lab-station' 'innmind'" &&
+                    $command->workingDirectory()->toString() === '/tmp/folder';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -110,14 +117,14 @@ class GraphsTest extends TestCase
             ->willReturn($output = $this->createMock(Output::class));
         $output
             ->expects($this->once())
-            ->method('__toString')
+            ->method('toString')
             ->willReturn('innmind_lab-station_dependents.svg');
         $processes
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "open 'innmind_lab-station_dependents.svg'" &&
-                    $command->workingDirectory() === '/tmp/folder';
+                return $command->toString() === "open 'innmind_lab-station_dependents.svg'" &&
+                    $command->workingDirectory()->toString() === '/tmp/folder';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -127,8 +134,8 @@ class GraphsTest extends TestCase
             ->expects($this->at(2))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "dependency-graph 'of' 'innmind/lab-station'" &&
-                    $command->workingDirectory() === '/tmp/folder';
+                return $command->toString() === "dependency-graph 'of' 'innmind/lab-station'" &&
+                    $command->workingDirectory()->toString() === '/tmp/folder';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -145,14 +152,14 @@ class GraphsTest extends TestCase
             ->willReturn($output = $this->createMock(Output::class));
         $output
             ->expects($this->once())
-            ->method('__toString')
+            ->method('toString')
             ->willReturn('innmind_lab-station.svg');
         $processes
             ->expects($this->at(3))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "open 'innmind_lab-station.svg'" &&
-                    $command->workingDirectory() === '/tmp/folder';
+                return $command->toString() === "open 'innmind_lab-station.svg'" &&
+                    $command->workingDirectory()->toString() === '/tmp/folder';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -162,8 +169,8 @@ class GraphsTest extends TestCase
             ->expects($this->at(4))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "dependency-graph 'vendor' 'innmind'" &&
-                    $command->workingDirectory() === '/tmp/folder';
+                return $command->toString() === "dependency-graph 'vendor' 'innmind'" &&
+                    $command->workingDirectory()->toString() === '/tmp/folder';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -180,14 +187,14 @@ class GraphsTest extends TestCase
             ->willReturn($output = $this->createMock(Output::class));
         $output
             ->expects($this->once())
-            ->method('__toString')
+            ->method('toString')
             ->willReturn('innmind.svg');
         $processes
             ->expects($this->at(5))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "open 'innmind.svg'" &&
-                    $command->workingDirectory() === '/tmp/folder';
+                return $command->toString() === "open 'innmind.svg'" &&
+                    $command->workingDirectory()->toString() === '/tmp/folder';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -195,9 +202,17 @@ class GraphsTest extends TestCase
             ->method('wait');
         $env = $this->createMock(Environment::class);
         $env
+            ->expects($this->any())
+            ->method('interactive')
+            ->willReturn(true);
+        $env
+            ->expects($this->once())
+            ->method('arguments')
+            ->willReturn(Sequence::strings());
+        $env
             ->expects($this->once())
             ->method('workingDirectory')
-            ->willReturn(new Path('/somewhere'));
+            ->willReturn(Path::of('/somewhere'));
         $input = \fopen('php://temp', 'r+');
         \fwrite($input, "\n");
         $env
@@ -224,17 +239,18 @@ class GraphsTest extends TestCase
         $trigger = new Graphs(
             $filesystem = $this->createMock(Filesystem::class),
             $processes = $this->createMock(Processes::class),
-            new Path('/tmp/folder')
+            new Sockets\Unix,
+            Path::of('/tmp/folder')
         );
         $filesystem
             ->expects($this->once())
             ->method('mount')
-            ->with(new Path('/somewhere'))
+            ->with(Path::of('/somewhere'))
             ->willReturn($project = $this->createMock(Adapter::class));
         $project
             ->expects($this->once())
             ->method('get')
-            ->with('composer.json')
+            ->with(new Name('composer.json'))
             ->willReturn($composer = $this->createMock(File::class));
         $composer
             ->expects($this->once())
@@ -242,14 +258,14 @@ class GraphsTest extends TestCase
             ->willReturn($content = $this->createMock(Readable::class));
         $content
             ->expects($this->once())
-            ->method('__toString')
+            ->method('toString')
             ->willReturn('{"name":"innmind/lab-station"}');
         $processes
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "dependency-graph 'depends-on' 'innmind/lab-station' 'innmind'" &&
-                    $command->workingDirectory() === '/tmp/folder';
+                return $command->toString() === "dependency-graph 'depends-on' 'innmind/lab-station' 'innmind'" &&
+                    $command->workingDirectory()->toString() === '/tmp/folder';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -266,17 +282,25 @@ class GraphsTest extends TestCase
             ->willReturn($output = $this->createMock(Output::class));
         $output
             ->expects($this->once())
-            ->method('__toString')
+            ->method('toString')
             ->willReturn('failed to generate graph');
         $env = $this->createMock(Environment::class);
         $env
+            ->expects($this->any())
+            ->method('interactive')
+            ->willReturn(true);
+        $env
             ->expects($this->once())
-            ->method('workingDirectory')
-            ->willReturn(new Path('/somewhere'));
+            ->method('arguments')
+            ->willReturn(Sequence::strings());
         $env
             ->expects($this->once())
             ->method('workingDirectory')
-            ->willReturn(new Path('/somewhere'));
+            ->willReturn(Path::of('/somewhere'));
+        $env
+            ->expects($this->once())
+            ->method('workingDirectory')
+            ->willReturn(Path::of('/somewhere'));
         $input = \fopen('php://temp', 'r+');
         \fwrite($input, "\n");
         $env
@@ -303,8 +327,8 @@ class GraphsTest extends TestCase
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "dependency-graph 'of' 'innmind/lab-station'" &&
-                    $command->workingDirectory() === '/tmp/folder';
+                return $command->toString() === "dependency-graph 'of' 'innmind/lab-station'" &&
+                    $command->workingDirectory()->toString() === '/tmp/folder';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -321,14 +345,14 @@ class GraphsTest extends TestCase
             ->willReturn($output = $this->createMock(Output::class));
         $output
             ->expects($this->once())
-            ->method('__toString')
+            ->method('toString')
             ->willReturn('innmind_lab-station.svg');
         $processes
             ->expects($this->at(2))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "open 'innmind_lab-station.svg'" &&
-                    $command->workingDirectory() === '/tmp/folder';
+                return $command->toString() === "open 'innmind_lab-station.svg'" &&
+                    $command->workingDirectory()->toString() === '/tmp/folder';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -338,8 +362,8 @@ class GraphsTest extends TestCase
             ->expects($this->at(3))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "dependency-graph 'vendor' 'innmind'" &&
-                    $command->workingDirectory() === '/tmp/folder';
+                return $command->toString() === "dependency-graph 'vendor' 'innmind'" &&
+                    $command->workingDirectory()->toString() === '/tmp/folder';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -356,14 +380,14 @@ class GraphsTest extends TestCase
             ->willReturn($output = $this->createMock(Output::class));
         $output
             ->expects($this->once())
-            ->method('__toString')
+            ->method('toString')
             ->willReturn('innmind.svg');
         $processes
             ->expects($this->at(4))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "open 'innmind.svg'" &&
-                    $command->workingDirectory() === '/tmp/folder';
+                return $command->toString() === "open 'innmind.svg'" &&
+                    $command->workingDirectory()->toString() === '/tmp/folder';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -381,7 +405,8 @@ class GraphsTest extends TestCase
         $trigger = new Graphs(
             $filesystem = $this->createMock(Filesystem::class),
             $processes = $this->createMock(Processes::class),
-            new Path('/tmp/folder')
+            new Sockets\Unix,
+            Path::of('/tmp/folder')
         );
         $filesystem
             ->expects($this->never())
@@ -390,6 +415,14 @@ class GraphsTest extends TestCase
             ->expects($this->never())
             ->method('execute');
         $env = $this->createMock(Environment::class);
+        $env
+            ->expects($this->any())
+            ->method('interactive')
+            ->willReturn(true);
+        $env
+            ->expects($this->once())
+            ->method('arguments')
+            ->willReturn(Sequence::strings());
         $input = \fopen('php://temp', 'r+');
         \fwrite($input, "n\n");
         $env

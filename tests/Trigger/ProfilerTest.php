@@ -16,8 +16,9 @@ use Innmind\Filesystem\{
     Adapter,
     File,
     Directory,
-    Stream\StringStream,
+    Name,
 };
+use Innmind\Stream\Readable\Stream;
 use Innmind\Url\Path;
 use PHPUnit\Framework\TestCase;
 
@@ -63,16 +64,16 @@ class ProfilerTest extends TestCase
         $env
             ->expects($this->once())
             ->method('workingDirectory')
-            ->willReturn(new Path('/path/to/project/vendor/package'));
+            ->willReturn(Path::of('/path/to/project/vendor/package'));
         $filesystem
             ->expects($this->once())
             ->method('mount')
-            ->with(new Path('/path/to/project/vendor/package'))
+            ->with(Path::of('/path/to/project/vendor/package'))
             ->willReturn($project = $this->createMock(Adapter::class));
         $project
             ->expects($this->once())
-            ->method('has')
-            ->with('config')
+            ->method('contains')
+            ->with(new Name('config'))
             ->willReturn(false);
         $processes
             ->expects($this->never())
@@ -94,21 +95,21 @@ class ProfilerTest extends TestCase
         $env
             ->expects($this->once())
             ->method('workingDirectory')
-            ->willReturn(new Path('/path/to/project/vendor/package'));
+            ->willReturn(Path::of('/path/to/project/vendor/package'));
         $filesystem
             ->expects($this->once())
             ->method('mount')
-            ->with(new Path('/path/to/project/vendor/package'))
+            ->with(Path::of('/path/to/project/vendor/package'))
             ->willReturn($project = $this->createMock(Adapter::class));
         $project
             ->expects($this->once())
-            ->method('has')
-            ->with('config')
+            ->method('contains')
+            ->with(new Name('config'))
             ->willReturn(true);
         $project
             ->expects($this->once())
             ->method('get')
-            ->with('config')
+            ->with(new Name('config'))
             ->willReturn($this->createMock(File::class));
         $processes
             ->expects($this->never())
@@ -130,26 +131,26 @@ class ProfilerTest extends TestCase
         $env
             ->expects($this->once())
             ->method('workingDirectory')
-            ->willReturn(new Path('/path/to/project/vendor/package'));
+            ->willReturn(Path::of('/path/to/project/vendor/package'));
         $filesystem
             ->expects($this->once())
             ->method('mount')
-            ->with(new Path('/path/to/project/vendor/package'))
+            ->with(Path::of('/path/to/project/vendor/package'))
             ->willReturn($project = $this->createMock(Adapter::class));
         $project
             ->expects($this->once())
-            ->method('has')
-            ->with('config')
+            ->method('contains')
+            ->with(new Name('config'))
             ->willReturn(true);
         $project
             ->expects($this->once())
             ->method('get')
-            ->with('config')
+            ->with(new Name('config'))
             ->willReturn($config = $this->createMock(Directory::class));
         $config
             ->expects($this->once())
-            ->method('has')
-            ->with('.env')
+            ->method('contains')
+            ->with(new Name('.env'))
             ->willReturn(false);
         $processes
             ->expects($this->never())
@@ -171,36 +172,36 @@ class ProfilerTest extends TestCase
         $env
             ->expects($this->any())
             ->method('workingDirectory')
-            ->willReturn(new Path('/path/to/project/vendor/package'));
+            ->willReturn(Path::of('/path/to/project/vendor/package'));
         $filesystem
             ->expects($this->once())
             ->method('mount')
-            ->with(new Path('/path/to/project/vendor/package'))
+            ->with(Path::of('/path/to/project/vendor/package'))
             ->willReturn($project = $this->createMock(Adapter::class));
         $project
             ->expects($this->once())
-            ->method('has')
-            ->with('config')
+            ->method('contains')
+            ->with(new Name('config'))
             ->willReturn(true);
         $project
             ->expects($this->once())
             ->method('get')
-            ->with('config')
+            ->with(new Name('config'))
             ->willReturn($config = $this->createMock(Directory::class));
         $config
             ->expects($this->once())
-            ->method('has')
-            ->with('.env')
+            ->method('contains')
+            ->with(new Name('.env'))
             ->willReturn(true);
         $config
             ->expects($this->once())
             ->method('get')
-            ->with('.env')
+            ->with(new Name('.env'))
             ->willReturn($file = $this->createMock(File::class));
         $file
             ->expects($this->once())
             ->method('content')
-            ->willReturn(new StringStream(''));
+            ->willReturn(Stream::ofContent(''));
         $processes
             ->expects($this->never())
             ->method('execute');
@@ -221,36 +222,36 @@ class ProfilerTest extends TestCase
         $env
             ->expects($this->any())
             ->method('workingDirectory')
-            ->willReturn(new Path('/path/to/project/vendor/package'));
+            ->willReturn(Path::of('/path/to/project/vendor/package'));
         $filesystem
             ->expects($this->once())
             ->method('mount')
-            ->with(new Path('/path/to/project/vendor/package'))
+            ->with(Path::of('/path/to/project/vendor/package'))
             ->willReturn($project = $this->createMock(Adapter::class));
         $project
             ->expects($this->once())
-            ->method('has')
-            ->with('config')
+            ->method('contains')
+            ->with(new Name('config'))
             ->willReturn(true);
         $project
             ->expects($this->once())
             ->method('get')
-            ->with('config')
+            ->with(new Name('config'))
             ->willReturn($config = $this->createMock(Directory::class));
         $config
             ->expects($this->once())
-            ->method('has')
-            ->with('.env')
+            ->method('contains')
+            ->with(new Name('.env'))
             ->willReturn(true);
         $config
             ->expects($this->once())
             ->method('get')
-            ->with('.env')
+            ->with(new Name('.env'))
             ->willReturn($file = $this->createMock(File::class));
         $file
             ->expects($this->once())
             ->method('content')
-            ->willReturn(new StringStream('DEBUG=0'));
+            ->willReturn(Stream::ofContent('DEBUG=0'));
         $processes
             ->expects($this->never())
             ->method('execute');
@@ -271,36 +272,36 @@ class ProfilerTest extends TestCase
         $env
             ->expects($this->any())
             ->method('workingDirectory')
-            ->willReturn(new Path('/path/to/project/vendor/package'));
+            ->willReturn(Path::of('/path/to/project/vendor/package'));
         $filesystem
             ->expects($this->once())
             ->method('mount')
-            ->with(new Path('/path/to/project/vendor/package'))
+            ->with(Path::of('/path/to/project/vendor/package'))
             ->willReturn($project = $this->createMock(Adapter::class));
         $project
             ->expects($this->once())
-            ->method('has')
-            ->with('config')
+            ->method('contains')
+            ->with(new Name('config'))
             ->willReturn(true);
         $project
             ->expects($this->once())
             ->method('get')
-            ->with('config')
+            ->with(new Name('config'))
             ->willReturn($config = $this->createMock(Directory::class));
         $config
             ->expects($this->once())
-            ->method('has')
-            ->with('.env')
+            ->method('contains')
+            ->with(new Name('.env'))
             ->willReturn(true);
         $config
             ->expects($this->once())
             ->method('get')
-            ->with('.env')
+            ->with(new Name('.env'))
             ->willReturn($file = $this->createMock(File::class));
         $file
             ->expects($this->once())
             ->method('content')
-            ->willReturn(new StringStream('DEBUG=1'));
+            ->willReturn(Stream::ofContent('DEBUG=1'));
         $processes
             ->expects($this->never())
             ->method('execute');
@@ -321,42 +322,42 @@ class ProfilerTest extends TestCase
         $env
             ->expects($this->any())
             ->method('workingDirectory')
-            ->willReturn(new Path('/path/to/project/vendor/package'));
+            ->willReturn(Path::of('/path/to/project/vendor/package'));
         $filesystem
             ->expects($this->once())
             ->method('mount')
-            ->with(new Path('/path/to/project/vendor/package'))
+            ->with(Path::of('/path/to/project/vendor/package'))
             ->willReturn($project = $this->createMock(Adapter::class));
         $project
             ->expects($this->once())
-            ->method('has')
-            ->with('config')
+            ->method('contains')
+            ->with(new Name('config'))
             ->willReturn(true);
         $project
             ->expects($this->once())
             ->method('get')
-            ->with('config')
+            ->with(new Name('config'))
             ->willReturn($config = $this->createMock(Directory::class));
         $config
             ->expects($this->once())
-            ->method('has')
-            ->with('.env')
+            ->method('contains')
+            ->with(new Name('.env'))
             ->willReturn(true);
         $config
             ->expects($this->once())
             ->method('get')
-            ->with('.env')
+            ->with(new Name('.env'))
             ->willReturn($file = $this->createMock(File::class));
         $file
             ->expects($this->once())
             ->method('content')
-            ->willReturn(new StringStream("DEBUG=1\nPROFILER=http://localhost:8080/"));
+            ->willReturn(Stream::ofContent("DEBUG=1\nPROFILER=http://localhost:8080/"));
         $processes
             ->expects($this->once())
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "php '-S' 'localhost:8080'" &&
-                    $command->workingDirectory() === '/path/to/project/vendor/package/../profiler/public';
+                return $command->toString() === "php '-S' 'localhost:8080'" &&
+                    $command->workingDirectory()->toString() === '/path/to/project/vendor/package/../profiler/public';
             }));
 
         $this->assertNull($trigger(

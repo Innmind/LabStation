@@ -15,6 +15,7 @@ use Innmind\Server\Control\Server\{
     Process\Output,
 };
 use Innmind\OperatingSystem\Filesystem;
+use Innmind\Filesystem\Name;
 use Innmind\Immutable\Str;
 
 final class Psalm implements Trigger
@@ -39,7 +40,7 @@ final class Psalm implements Trigger
 
         $directory = $this->filesystem->mount($env->workingDirectory());
 
-        if (!$directory->has('psalm.xml')) {
+        if (!$directory->contains(new Name('psalm.xml'))) {
             return;
         }
 
@@ -50,7 +51,7 @@ final class Psalm implements Trigger
             ->processes
             ->execute(
                 Command::foreground('vendor/bin/psalm')
-                    ->withWorkingDirectory((string) $env->workingDirectory())
+                    ->withWorkingDirectory($env->workingDirectory())
             );
         $process
             ->output()
