@@ -10,11 +10,6 @@ use Innmind\ProcessManager\{
     Runner\SubProcess,
 };
 use Innmind\IPC\Process\Name;
-use Innmind\Git\Git;
-use Innmind\GitRelease\{
-    SignedRelease,
-    LatestVersion,
-};
 use function Innmind\FileWatch\bootstrap as watch;
 use function Innmind\IPC\bootstrap as ipc;
 
@@ -24,7 +19,6 @@ function bootstrap(OperatingSystem $os): Commands
     $watch = watch($os);
     $ipc = ipc($os);
     $monitor = new Name('lab-station-'.$os->process()->id());
-    $git = new Git($os->control(), $os->clock());
 
     return new Commands(
         new Command\Work(
@@ -54,12 +48,7 @@ function bootstrap(OperatingSystem $os): Commands
                         $os->control()->processes(),
                         $os->filesystem()
                     ),
-                    new Trigger\ComposerUpdate($os->control()->processes()),
-                    new Trigger\GitRelease(
-                        $git,
-                        new SignedRelease,
-                        new LatestVersion
-                    )
+                    new Trigger\ComposerUpdate($os->control()->processes())
                 ),
                 new Agent\WatchSources(
                     $protocol,
@@ -68,13 +57,6 @@ function bootstrap(OperatingSystem $os): Commands
                     $monitor
                 ),
                 new Agent\WatchTests(
-                    $protocol,
-                    $watch,
-                    $ipc,
-                    $monitor
-                ),
-                new Agent\WatchCurrentGitBranch(
-                    $git,
                     $protocol,
                     $watch,
                     $ipc,

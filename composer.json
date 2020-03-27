@@ -23,8 +23,7 @@
         "symfony/dotenv": "^4.2",
         "innmind/file-watch": "^1.1",
         "innmind/ipc": "^2.1",
-        "innmind/process-manager": "^2.1",
-        "innmind/git-release": "^1.5"
+        "innmind/process-manager": "^2.1"
     },
     "autoload": {
         "psr-4": {

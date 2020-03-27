@@ -27,11 +27,6 @@ final class Type
         return new self('start');
     }
 
-    public static function gitBranchChanged(): self
-    {
-        return new self('gitBranchChanged');
-    }
-
     public function equals(self $other): bool
     {
         return $this->value === $other->value;
