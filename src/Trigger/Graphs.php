@@ -24,9 +24,9 @@ use Innmind\Immutable\Str;
 
 final class Graphs implements Trigger
 {
-    private $filesystem;
-    private $processes;
-    private $tmp;
+    private Filesystem $filesystem;
+    private Processes $processes;
+    private PathInterface $tmp;
 
     public function __construct(
         Filesystem $filesystem,

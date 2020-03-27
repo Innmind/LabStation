@@ -13,7 +13,7 @@ use Innmind\CLI\{
 
 final class Work implements Command
 {
-    private $monitor;
+    private Monitor $monitor;
 
     public function __construct(Monitor $monitor)
     {

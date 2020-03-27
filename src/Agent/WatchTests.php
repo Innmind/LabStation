@@ -21,10 +21,10 @@ use Innmind\Url\{
 
 final class WatchTests implements Agent
 {
-    private $protocol;
-    private $watch;
-    private $ipc;
-    private $monitor;
+    private Protocol $protocol;
+    private Watch $watch;
+    private IPC $ipc;
+    private Name $monitor;
 
     public function __construct(
         Protocol $protocol,

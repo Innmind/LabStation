@@ -18,7 +18,7 @@ use Innmind\Immutable\Str;
 
 final class Tests implements Trigger
 {
-    private $processes;
+    private Processes $processes;
 
     public function __construct(Processes $processes)
     {

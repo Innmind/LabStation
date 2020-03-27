@@ -7,8 +7,8 @@ use Innmind\LabStation\Activity\Type;
 
 final class Activity
 {
-    private $type;
-    private $data;
+    private Type $type;
+    private array $data;
 
     public function __construct(Type $type, array $data)
     {

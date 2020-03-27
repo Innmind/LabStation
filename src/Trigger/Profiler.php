@@ -26,9 +26,9 @@ use Symfony\Component\Dotenv\Dotenv;
 
 final class Profiler implements Trigger
 {
-    private $filesystem;
-    private $processes;
-    private $dotenv;
+    private Filesystem $filesystem;
+    private Processes $processes;
+    private Dotenv $dotenv;
 
     public function __construct(Filesystem $filesystem, Processes $processes)
     {

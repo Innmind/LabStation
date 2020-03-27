@@ -19,8 +19,8 @@ use Innmind\Immutable\Str;
 
 final class Psalm implements Trigger
 {
-    private $processes;
-    private $filesystem;
+    private Processes $processes;
+    private Filesystem $filesystem;
 
     public function __construct(Processes $processes, Filesystem $filesystem)
     {

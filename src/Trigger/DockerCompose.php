@@ -17,8 +17,8 @@ use Innmind\Server\Control\Server\{
 
 final class DockerCompose implements Trigger
 {
-    private $filesystem;
-    private $processes;
+    private Filesystem $filesystem;
+    private Processes $processes;
 
     public function __construct(Filesystem $filesystem, Processes $processes)
     {
