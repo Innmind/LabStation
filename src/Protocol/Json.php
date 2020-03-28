@@ -23,7 +23,7 @@ final class Json implements Protocol
             Str::of(Format::encode([
                 'type' => $activity->type()->toString(),
                 'data' => $activity->data(),
-            ]))
+            ])),
         );
     }
 
@@ -38,7 +38,7 @@ final class Json implements Protocol
 
         return new Activity(
             Type::of($content['type']),
-            $content['data']
+            $content['data'],
         );
     }
 }

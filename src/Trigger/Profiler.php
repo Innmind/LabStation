@@ -86,7 +86,7 @@ final class Profiler implements Trigger
             Command::background('php')
                 ->withShortOption('S')
                 ->withArgument(Url::of($env['PROFILER'])->authority()->toString())
-                ->withWorkingDirectory($workingDirectory)
+                ->withWorkingDirectory($workingDirectory),
         );
     }
 }

@@ -23,7 +23,7 @@ function bootstrap(OperatingSystem $os): Commands
             new Monitor(
                 $protocol,
                 new Parallel(
-                    new SubProcess($os->process())
+                    new SubProcess($os->process()),
                 ),
                 $ipc,
                 $monitor,
@@ -32,15 +32,15 @@ function bootstrap(OperatingSystem $os): Commands
                         $os->filesystem(),
                         $os->control()->processes(),
                         $os->sockets(),
-                        $os->status()->tmp()
+                        $os->status()->tmp(),
                     ),
                     new Trigger\Profiler(
                         $os->filesystem(),
-                        $os->control()->processes()
+                        $os->control()->processes(),
                     ),
                     new Trigger\DockerCompose(
                         $os->filesystem(),
-                        $os->control()->processes()
+                        $os->control()->processes(),
                     ),
                     new Trigger\Tests($os->control()->processes()),
                     new Trigger\Psalm(
@@ -56,15 +56,15 @@ function bootstrap(OperatingSystem $os): Commands
                     $protocol,
                     $os->filesystem(),
                     $ipc,
-                    $monitor
+                    $monitor,
                 ),
                 new Agent\WatchTests(
                     $protocol,
                     $os->filesystem(),
                     $ipc,
-                    $monitor
-                )
-            )
-        )
+                    $monitor,
+                ),
+            ),
+        ),
     );
 }

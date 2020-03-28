@@ -68,21 +68,21 @@ final class Graphs implements Trigger
                 ->withArgument($name->toString())
                 ->withArgument($vendor->toString())
                 ->withWorkingDirectory($this->tmp),
-            $env->error()
+            $env->error(),
         );
         $this->open(
             Command::foreground('dependency-graph')
                 ->withArgument('of')
                 ->withArgument($name->toString())
                 ->withWorkingDirectory($this->tmp),
-            $env->error()
+            $env->error(),
         );
         $this->open(
             Command::foreground('dependency-graph')
                 ->withArgument('vendor')
                 ->withArgument($vendor->toString())
                 ->withWorkingDirectory($this->tmp),
-            $env->error()
+            $env->error(),
         );
     }
 
@@ -115,7 +115,7 @@ final class Graphs implements Trigger
             ->execute(
                 Command::foreground('open')
                     ->withArgument($process->output()->toString())
-                    ->withWorkingDirectory($this->tmp)
+                    ->withWorkingDirectory($this->tmp),
             )
             ->wait();
     }

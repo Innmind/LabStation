@@ -51,7 +51,7 @@ final class Psalm implements Trigger
             ->processes
             ->execute(
                 Command::foreground('vendor/bin/psalm')
-                    ->withWorkingDirectory($env->workingDirectory())
+                    ->withWorkingDirectory($env->workingDirectory()),
             );
         $process
             ->output()

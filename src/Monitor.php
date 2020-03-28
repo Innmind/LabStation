@@ -52,7 +52,7 @@ final class Monitor
         $agents = $agents();
         ($this->trigger)(
             new Activity(Type::start(), []),
-            $env
+            $env,
         );
 
         $this->ipc->listen($this->name)(function(Message $message) use ($env): void {

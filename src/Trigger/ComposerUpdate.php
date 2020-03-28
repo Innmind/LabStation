@@ -53,7 +53,7 @@ final class ComposerUpdate implements Trigger
                 Command::foreground('composer')
                     ->withOption('ansi')
                     ->withArgument('update')
-                    ->withWorkingDirectory($env->workingDirectory())
+                    ->withWorkingDirectory($env->workingDirectory()),
             )
             ->output()
             ->foreach(static function(Str $line, Output\Type $type) use ($output, $error): void {

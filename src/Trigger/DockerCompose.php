@@ -43,7 +43,7 @@ final class DockerCompose implements Trigger
             Command::foreground('docker-compose')
                 ->withArgument('up')
                 ->withShortOption('d')
-                ->withWorkingDirectory($env->workingDirectory())
+                ->withWorkingDirectory($env->workingDirectory()),
         );
     }
 }

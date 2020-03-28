@@ -43,8 +43,8 @@ final class WatchSources implements Agent
             $monitor = $this->ipc->get($this->monitor);
             $monitor->send(
                 $this->protocol->encode(
-                    new Activity(Type::sourcesModified(), [])
-                )
+                    new Activity(Type::sourcesModified(), []),
+                ),
             );
             $monitor->close();
         });

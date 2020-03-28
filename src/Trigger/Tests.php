@@ -43,7 +43,7 @@ final class Tests implements Trigger
                 Command::foreground('vendor/bin/phpunit')
                     ->withOption('colors', 'always')
                     ->withOption('fail-on-warning')
-                    ->withWorkingDirectory($env->workingDirectory())
+                    ->withWorkingDirectory($env->workingDirectory()),
             );
         $process
             ->output()
@@ -68,7 +68,7 @@ final class Tests implements Trigger
             ->processes
             ->execute(
                 Command::foreground('say')
-                    ->withArgument($text)
+                    ->withArgument($text),
             )
             ->wait();
 
