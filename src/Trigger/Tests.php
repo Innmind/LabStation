@@ -73,7 +73,7 @@ final class Tests implements Trigger
             ->wait();
 
         // clear terminal
-        if ($successful) {
+        if ($successful && !$env->arguments()->contains('--keep-output')) {
             $output->write(Str::of("\033[2J\033[H"));
         }
     }

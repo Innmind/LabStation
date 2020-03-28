@@ -141,7 +141,7 @@ class PsalmTest extends TestCase
             }));
         $env = $this->createMock(Environment::class);
         $env
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('arguments')
             ->willReturn(Sequence::strings());
         $env
@@ -168,6 +168,61 @@ class PsalmTest extends TestCase
             ->expects($this->once())
             ->method('write')
             ->with(Str::of('some error'));
+
+        $this->assertNull($trigger(
+            new Activity(Type::sourcesModified(), []),
+            $env
+        ));
+    }
+
+    public function testDoesnClearTerminalOnSuccessfullTestWhenSpecifiedOptionProvided()
+    {
+        $trigger = new Psalm(
+            $processes = $this->createMock(Processes::class),
+            $filesystem = $this->createMock(Filesystem::class)
+        );
+        $workingDirectory = Path::of('/somewhere');
+        $filesystem
+            ->expects($this->once())
+            ->method('mount')
+            ->with($workingDirectory)
+            ->willReturn($directory = $this->createMock(Adapter::class));
+        $directory
+            ->expects($this->once())
+            ->method('contains')
+            ->with(new Name('psalm.xml'))
+            ->willReturn(true);
+        $processes
+            ->expects($this->at(0))
+            ->method('execute')
+            ->with($this->callback(static function($command): bool {
+                return $command->toString() === "vendor/bin/psalm" &&
+                    $command->workingDirectory()->toString() === '/somewhere';
+            }))
+            ->willReturn($process = $this->createMock(Process::class));
+        $process
+            ->expects($this->once())
+            ->method('wait');
+        $process
+            ->expects($this->once())
+            ->method('exitCode')
+            ->willReturn(new ExitCode(0));
+        $env = $this->createMock(Environment::class);
+        $env
+            ->expects($this->any())
+            ->method('arguments')
+            ->willReturn(Sequence::strings('--keep-output'));
+        $env
+            ->expects($this->any())
+            ->method('workingDirectory')
+            ->willReturn($workingDirectory);
+        $env
+            ->expects($this->once())
+            ->method('output')
+            ->willReturn($output = $this->createMock(Writable::class));
+        $output
+            ->expects($this->never())
+            ->method('write');
 
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
@@ -228,7 +283,7 @@ class PsalmTest extends TestCase
             }));
         $env = $this->createMock(Environment::class);
         $env
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('arguments')
             ->willReturn(Sequence::strings());
         $env
