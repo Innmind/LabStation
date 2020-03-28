@@ -107,9 +107,13 @@ class TestsTest extends TestCase
             ->method('error')
             ->willReturn($error = $this->createMock(Writable::class));
         $output
-            ->expects($this->once())
+            ->expects($this->at(0))
             ->method('write')
             ->with(Str::of('some output'));
+        $output
+            ->expects($this->at(1))
+            ->method('write')
+            ->with(Str::of("\033[2J\033[H"));
         $error
             ->expects($this->once())
             ->method('write')
@@ -179,9 +183,13 @@ class TestsTest extends TestCase
             ->method('error')
             ->willReturn($error = $this->createMock(Writable::class));
         $output
-            ->expects($this->once())
+            ->expects($this->at(0))
             ->method('write')
             ->with(Str::of('some output'));
+        $output
+            ->expects($this->at(1))
+            ->method('write')
+            ->with(Str::of("\033[2J\033[H"));
         $error
             ->expects($this->once())
             ->method('write')
@@ -239,6 +247,13 @@ class TestsTest extends TestCase
             ->expects($this->once())
             ->method('arguments')
             ->willReturn(Sequence::strings());
+        $env
+            ->expects($this->once())
+            ->method('output')
+            ->willReturn($output = $this->createMock(Writable::class));
+        $output
+            ->expects($this->never())
+            ->method('write');
 
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),

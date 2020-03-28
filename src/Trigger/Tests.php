@@ -71,5 +71,10 @@ final class Tests implements Trigger
                     ->withArgument($text)
             )
             ->wait();
+
+        // clear terminal
+        if ($successful) {
+            $output->write(Str::of("\033[2J\033[H"));
+        }
     }
 }
