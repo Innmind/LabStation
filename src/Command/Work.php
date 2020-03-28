@@ -27,6 +27,6 @@ final class Work implements Command
 
     public function toString(): string
     {
-        return 'work';
+        return 'work --silent';
     }
 }

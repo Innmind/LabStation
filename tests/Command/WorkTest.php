@@ -44,7 +44,7 @@ class WorkTest extends TestCase
     public function testUsage()
     {
         $this->assertSame(
-            'work',
+            'work --silent',
             (new Work(
                 new Monitor(
                     $this->createMock(Protocol::class),
