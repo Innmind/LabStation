@@ -1,10 +1,8 @@
 # Lab Station
 
-| `develop` |
-|-----------|
-| [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/Innmind/LabStation/badges/quality-score.png?b=develop)](https://scrutinizer-ci.com/g/Innmind/LabStation/?branch=develop) |
-| [![Code Coverage](https://scrutinizer-ci.com/g/Innmind/LabStation/badges/coverage.png?b=develop)](https://scrutinizer-ci.com/g/Innmind/LabStation/?branch=develop) |
-| [![Build Status](https://scrutinizer-ci.com/g/Innmind/LabStation/badges/build.png?b=develop)](https://scrutinizer-ci.com/g/Innmind/LabStation/build-status/develop) |
+[![Build Status](https://github.com/Innmind/LabStation/workflows/CI/badge.svg)](https://github.com/Innmind/LabStation/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/Innmind/LabStation/branch/develop/graph/badge.svg)](https://codecov.io/gh/Innmind/LabStation)
+[![Type Coverage](https://shepherd.dev/github/Innmind/LabStation/coverage.svg)](https://shepherd.dev/github/Innmind/LabStation)
 
 Development tool to automate certain parts of the dev cycle.
 
