@@ -21,7 +21,7 @@ final class Json implements Protocol
         return new Message\Generic(
             new MediaType('application', 'json'),
             Str::of(Format::encode([
-                'type' => (string) $activity->type(),
+                'type' => $activity->type()->toString(),
                 'data' => $activity->data(),
             ]))
         );
