@@ -12,7 +12,6 @@ Automatisations:
 - Launch PHPUnit tests when `src` or `tests` folders are modified
 - Launch Psalm checks (if a `psalm.xml` exists) when `src` or `tests` folders are modified
 - Start docker compose when there is a `docker-compose.yml` at the project root
-- Ask for the kind of tag to create when branch is changed to `master`
 
 ![](example.gif)
 
