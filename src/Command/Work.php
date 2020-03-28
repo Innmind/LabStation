@@ -13,7 +13,7 @@ use Innmind\CLI\{
 
 final class Work implements Command
 {
-    private $monitor;
+    private Monitor $monitor;
 
     public function __construct(Monitor $monitor)
     {
@@ -25,8 +25,8 @@ final class Work implements Command
         ($this->monitor)($env);
     }
 
-    public function __toString(): string
+    public function toString(): string
     {
-        return 'work';
+        return 'work --silent --keep-output';
     }
 }

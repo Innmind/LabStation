@@ -9,45 +9,42 @@ use Innmind\LabStation\{
     Activity,
     Activity\Type,
 };
-use Innmind\FileWatch\Watch;
+use Innmind\OperatingSystem\Filesystem;
 use Innmind\IPC\{
     IPC,
     Process\Name,
 };
-use Innmind\Url\{
-    PathInterface,
-    Path,
-};
+use Innmind\Url\Path;
 
 final class WatchSources implements Agent
 {
-    private $protocol;
-    private $watch;
-    private $ipc;
-    private $monitor;
+    private Protocol $protocol;
+    private Filesystem $filesystem;
+    private IPC $ipc;
+    private Name $monitor;
 
     public function __construct(
         Protocol $protocol,
-        Watch $watch,
+        Filesystem $filesystem,
         IPC $ipc,
         Name $monitor
     ) {
         $this->protocol = $protocol;
-        $this->watch = $watch;
+        $this->filesystem = $filesystem;
         $this->ipc = $ipc;
         $this->monitor = $monitor;
     }
 
-    public function __invoke(PathInterface $project): void
+    public function __invoke(Path $project): void
     {
-        $src = new Path($project.'/src');
+        $src = $project->resolve(Path::of('src'));
 
-        ($this->watch)($src)(function() {
+        $this->filesystem->watch($src)(function() {
             $monitor = $this->ipc->get($this->monitor);
             $monitor->send(
                 $this->protocol->encode(
-                    new Activity(Type::sourcesModified(), [])
-                )
+                    new Activity(Type::sourcesModified(), []),
+                ),
             );
             $monitor->close();
         });

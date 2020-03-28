@@ -14,12 +14,13 @@ use Innmind\CLI\Environment;
 
 final class Monitor
 {
-    private $protocol;
-    private $manager;
-    private $ipc;
-    private $name;
-    private $trigger;
-    private $agents;
+    private Protocol $protocol;
+    private Manager $manager;
+    private IPC $ipc;
+    private Name $name;
+    private Trigger $trigger;
+    /** @var list<Agent> */
+    private array $agents;
 
     public function __construct(
         Protocol $protocol,
@@ -51,7 +52,7 @@ final class Monitor
         $agents = $agents();
         ($this->trigger)(
             new Activity(Type::start(), []),
-            $env
+            $env,
         );
 
         $this->ipc->listen($this->name)(function(Message $message) use ($env): void {

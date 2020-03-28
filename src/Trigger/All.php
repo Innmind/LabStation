@@ -11,7 +11,8 @@ use Innmind\CLI\Environment;
 
 final class All implements Trigger
 {
-    private $triggers;
+    /** @var list<Trigger> */
+    private array $triggers;
 
     public function __construct(Trigger ...$triggers)
     {

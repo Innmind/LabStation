@@ -19,7 +19,7 @@ use Innmind\CLI\Environment;
 use Innmind\Stream\Writable;
 use Innmind\Url\Path;
 use Innmind\Immutable\{
-    Stream,
+    Sequence,
     Str,
 };
 use PHPUnit\Framework\TestCase;
@@ -58,8 +58,8 @@ class TestsTest extends TestCase
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "vendor/bin/phpunit '--colors=always'" &&
-                    $command->workingDirectory() === '/somewhere';
+                return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
+                    $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -87,13 +87,17 @@ class TestsTest extends TestCase
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "say 'PHPUnit : ok'";
+                return $command->toString() === "say 'PHPUnit : ok'";
             }));
         $env = $this->createMock(Environment::class);
         $env
+            ->expects($this->any())
+            ->method('arguments')
+            ->willReturn(Sequence::strings());
+        $env
             ->expects($this->once())
             ->method('workingDirectory')
-            ->willReturn(new Path('/somewhere'));
+            ->willReturn(Path::of('/somewhere'));
         $env
             ->expects($this->once())
             ->method('output')
@@ -103,13 +107,66 @@ class TestsTest extends TestCase
             ->method('error')
             ->willReturn($error = $this->createMock(Writable::class));
         $output
-            ->expects($this->once())
+            ->expects($this->at(0))
             ->method('write')
             ->with(Str::of('some output'));
+        $output
+            ->expects($this->at(1))
+            ->method('write')
+            ->with(Str::of("\033[2J\033[H"));
         $error
             ->expects($this->once())
             ->method('write')
             ->with(Str::of('some error'));
+
+        $this->assertNull($trigger(
+            new Activity(Type::sourcesModified(), []),
+            $env
+        ));
+    }
+
+    public function testDoesnClearTerminalOnSuccessfullTestWhenSpecifiedOptionProvided()
+    {
+        $trigger = new Tests(
+            $processes = $this->createMock(Processes::class)
+        );
+        $processes
+            ->expects($this->at(0))
+            ->method('execute')
+            ->with($this->callback(static function($command): bool {
+                return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
+                    $command->workingDirectory()->toString() === '/somewhere';
+            }))
+            ->willReturn($process = $this->createMock(Process::class));
+        $process
+            ->expects($this->once())
+            ->method('wait');
+        $process
+            ->expects($this->once())
+            ->method('exitCode')
+            ->willReturn(new ExitCode(0));
+        $processes
+            ->expects($this->at(1))
+            ->method('execute')
+            ->with($this->callback(static function($command): bool {
+                return $command->toString() === "say 'PHPUnit : ok'";
+            }));
+        $env = $this->createMock(Environment::class);
+        $env
+            ->expects($this->any())
+            ->method('arguments')
+            ->willReturn(Sequence::strings('--keep-output'));
+        $env
+            ->expects($this->once())
+            ->method('workingDirectory')
+            ->willReturn(Path::of('/somewhere'));
+        $env
+            ->expects($this->once())
+            ->method('output')
+            ->willReturn($output = $this->createMock(Writable::class));
+        $output
+            ->expects($this->never())
+            ->method('write');
 
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
@@ -126,8 +183,8 @@ class TestsTest extends TestCase
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "vendor/bin/phpunit '--colors=always'" &&
-                    $command->workingDirectory() === '/somewhere';
+                return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
+                    $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -155,13 +212,17 @@ class TestsTest extends TestCase
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "say 'PHPUnit : ok'";
+                return $command->toString() === "say 'PHPUnit : ok'";
             }));
         $env = $this->createMock(Environment::class);
         $env
+            ->expects($this->any())
+            ->method('arguments')
+            ->willReturn(Sequence::strings());
+        $env
             ->expects($this->once())
             ->method('workingDirectory')
-            ->willReturn(new Path('/somewhere'));
+            ->willReturn(Path::of('/somewhere'));
         $env
             ->expects($this->once())
             ->method('output')
@@ -171,9 +232,13 @@ class TestsTest extends TestCase
             ->method('error')
             ->willReturn($error = $this->createMock(Writable::class));
         $output
-            ->expects($this->once())
+            ->expects($this->at(0))
             ->method('write')
             ->with(Str::of('some output'));
+        $output
+            ->expects($this->at(1))
+            ->method('write')
+            ->with(Str::of("\033[2J\033[H"));
         $error
             ->expects($this->once())
             ->method('write')
@@ -194,8 +259,8 @@ class TestsTest extends TestCase
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "vendor/bin/phpunit '--colors=always'" &&
-                    $command->workingDirectory() === '/somewhere';
+                return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
+                    $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -220,13 +285,24 @@ class TestsTest extends TestCase
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "say 'PHPUnit : failing'";
+                return $command->toString() === "say 'PHPUnit : failing'";
             }));
         $env = $this->createMock(Environment::class);
         $env
             ->expects($this->once())
             ->method('workingDirectory')
-            ->willReturn(new Path('/somewhere'));
+            ->willReturn(Path::of('/somewhere'));
+        $env
+            ->expects($this->once())
+            ->method('arguments')
+            ->willReturn(Sequence::strings());
+        $env
+            ->expects($this->once())
+            ->method('output')
+            ->willReturn($output = $this->createMock(Writable::class));
+        $output
+            ->expects($this->never())
+            ->method('write');
 
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
@@ -243,8 +319,8 @@ class TestsTest extends TestCase
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "vendor/bin/phpunit '--colors=always'" &&
-                    $command->workingDirectory() === '/somewhere';
+                return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
+                    $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
@@ -258,11 +334,11 @@ class TestsTest extends TestCase
         $env
             ->expects($this->once())
             ->method('workingDirectory')
-            ->willReturn(new Path('/somewhere'));
+            ->willReturn(Path::of('/somewhere'));
         $env
             ->expects($this->once())
             ->method('arguments')
-            ->willReturn(Stream::of('string', '--silent'));
+            ->willReturn(Sequence::of('string', '--silent'));
 
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),

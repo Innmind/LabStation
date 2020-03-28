@@ -40,7 +40,7 @@ class MonitorTest extends TestCase
         $env
             ->expects($this->once())
             ->method('workingDirectory')
-            ->willReturn(new Path('/project'));
+            ->willReturn(Path::of('/project'));
         $protocol
             ->expects($this->once())
             ->method('decode')
@@ -74,11 +74,11 @@ class MonitorTest extends TestCase
         $agent1
             ->expects($this->once())
             ->method('__invoke')
-            ->with(new Path('/project'));
+            ->with(Path::of('/project'));
         $agent2
             ->expects($this->once())
             ->method('__invoke')
-            ->with(new Path('/project'));
+            ->with(Path::of('/project'));
         $trigger
             ->expects($this->at(0))
             ->method('__invoke')

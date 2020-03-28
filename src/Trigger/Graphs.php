@@ -8,7 +8,10 @@ use Innmind\LabStation\{
     Activity,
     Activity\Type,
 };
-use Innmind\OperatingSystem\Filesystem;
+use Innmind\OperatingSystem\{
+    Filesystem,
+    Sockets,
+};
 use Innmind\Server\Control\Server\{
     Processes,
     Command,
@@ -17,24 +20,29 @@ use Innmind\CLI\{
     Environment,
     Question\Question,
 };
+use Innmind\Filesystem\Name;
 use Innmind\Json\Json;
-use Innmind\Url\PathInterface;
+use Innmind\Url\Path;
 use Innmind\Stream\Writable;
 use Innmind\Immutable\Str;
+use function Innmind\Immutable\unwrap;
 
 final class Graphs implements Trigger
 {
-    private $filesystem;
-    private $processes;
-    private $tmp;
+    private Filesystem $filesystem;
+    private Processes $processes;
+    private Sockets $sockets;
+    private Path $tmp;
 
     public function __construct(
         Filesystem $filesystem,
         Processes $processes,
-        PathInterface $tmp
+        Sockets $sockets,
+        Path $tmp
     ) {
         $this->filesystem = $filesystem;
         $this->processes = $processes;
+        $this->sockets = $sockets;
         $this->tmp = $tmp;
     }
 
@@ -45,36 +53,36 @@ final class Graphs implements Trigger
         }
 
         $ask = new Question('Render dependency graphs? [Y/n]');
-        $response = (string) $ask($env->input(), $env->output());
+        $response = $ask($env, $this->sockets)->toString();
 
         if (($response ?: 'y') === 'n') {
             return;
         }
 
         $name = $this->load($env);
-        [$vendor, $package] = $name->split('/');
+        [$vendor, $package] = unwrap($name->split('/'));
 
         $this->open(
             Command::foreground('dependency-graph')
                 ->withArgument('depends-on')
-                ->withArgument((string) $name)
-                ->withArgument((string) $vendor)
-                ->withWorkingDirectory((string) $this->tmp),
-            $env->error()
+                ->withArgument($name->toString())
+                ->withArgument($vendor->toString())
+                ->withWorkingDirectory($this->tmp),
+            $env->error(),
         );
         $this->open(
             Command::foreground('dependency-graph')
                 ->withArgument('of')
-                ->withArgument((string) $name)
-                ->withWorkingDirectory((string) $this->tmp),
-            $env->error()
+                ->withArgument($name->toString())
+                ->withWorkingDirectory($this->tmp),
+            $env->error(),
         );
         $this->open(
             Command::foreground('dependency-graph')
                 ->withArgument('vendor')
-                ->withArgument((string) $vendor)
-                ->withWorkingDirectory((string) $this->tmp),
-            $env->error()
+                ->withArgument($vendor->toString())
+                ->withWorkingDirectory($this->tmp),
+            $env->error(),
         );
     }
 
@@ -83,19 +91,21 @@ final class Graphs implements Trigger
         $composer = $this
             ->filesystem
             ->mount($env->workingDirectory())
-            ->get('composer.json')
+            ->get(new Name('composer.json'))
             ->content();
-        $package = Json::decode((string) $composer);
+        /** @var array{name: string} */
+        $package = Json::decode($composer->toString());
 
         return Str::of($package['name']);
     }
 
     private function open(Command $command, Writable $error): void
     {
-        $process = $this->processes->execute($command)->wait();
+        $process = $this->processes->execute($command);
+        $process->wait();
 
         if (!$process->exitCode()->isSuccessful()) {
-            $error->write(Str::of((string) $process->output()));
+            $error->write(Str::of($process->output()->toString()));
 
             return;
         }
@@ -104,8 +114,8 @@ final class Graphs implements Trigger
             ->processes
             ->execute(
                 Command::foreground('open')
-                    ->withArgument((string) $process->output())
-                    ->withWorkingDirectory((string) $this->tmp)
+                    ->withArgument($process->output()->toString())
+                    ->withWorkingDirectory($this->tmp),
             )
             ->wait();
     }

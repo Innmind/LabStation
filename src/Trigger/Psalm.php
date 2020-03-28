@@ -15,12 +15,13 @@ use Innmind\Server\Control\Server\{
     Process\Output,
 };
 use Innmind\OperatingSystem\Filesystem;
+use Innmind\Filesystem\Name;
 use Innmind\Immutable\Str;
 
 final class Psalm implements Trigger
 {
-    private $processes;
-    private $filesystem;
+    private Processes $processes;
+    private Filesystem $filesystem;
 
     public function __construct(Processes $processes, Filesystem $filesystem)
     {
@@ -39,7 +40,7 @@ final class Psalm implements Trigger
 
         $directory = $this->filesystem->mount($env->workingDirectory());
 
-        if (!$directory->has('psalm.xml')) {
+        if (!$directory->contains(new Name('psalm.xml'))) {
             return;
         }
 
@@ -50,7 +51,7 @@ final class Psalm implements Trigger
             ->processes
             ->execute(
                 Command::foreground('vendor/bin/psalm')
-                    ->withWorkingDirectory((string) $env->workingDirectory())
+                    ->withWorkingDirectory($env->workingDirectory()),
             );
         $process
             ->output()
@@ -78,5 +79,10 @@ final class Psalm implements Trigger
                     ->withArgument($text)
             )
             ->wait();
+
+        // clear terminal
+        if ($successful && !$env->arguments()->contains('--keep-output')) {
+            $output->write(Str::of("\033[2J\033[H"));
+        }
     }
 }

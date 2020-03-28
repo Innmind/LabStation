@@ -18,7 +18,7 @@ use Innmind\Immutable\Str;
 
 final class Tests implements Trigger
 {
-    private $processes;
+    private Processes $processes;
 
     public function __construct(Processes $processes)
     {
@@ -42,7 +42,8 @@ final class Tests implements Trigger
             ->execute(
                 Command::foreground('vendor/bin/phpunit')
                     ->withOption('colors', 'always')
-                    ->withWorkingDirectory((string) $env->workingDirectory())
+                    ->withOption('fail-on-warning')
+                    ->withWorkingDirectory($env->workingDirectory()),
             );
         $process
             ->output()
@@ -67,8 +68,13 @@ final class Tests implements Trigger
             ->processes
             ->execute(
                 Command::foreground('say')
-                    ->withArgument($text)
+                    ->withArgument($text),
             )
             ->wait();
+
+        // clear terminal
+        if ($successful && !$env->arguments()->contains('--keep-output')) {
+            $output->write(Str::of("\033[2J\033[H"));
+        }
     }
 }

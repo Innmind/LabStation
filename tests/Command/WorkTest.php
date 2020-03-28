@@ -20,6 +20,7 @@ use Innmind\IPC\{
     IPC,
     Process\Name,
 };
+use Innmind\Url\Path;
 use PHPUnit\Framework\TestCase;
 
 class WorkTest extends TestCase
@@ -43,8 +44,8 @@ class WorkTest extends TestCase
     public function testUsage()
     {
         $this->assertSame(
-            'work',
-            (string) new Work(
+            'work --silent --keep-output',
+            (new Work(
                 new Monitor(
                     $this->createMock(Protocol::class),
                     $this->createMock(Manager::class),
@@ -52,7 +53,7 @@ class WorkTest extends TestCase
                     new Name('foo'),
                     $this->createMock(Trigger::class)
                 )
-            )
+            ))->toString()
         );
     }
 
@@ -70,9 +71,14 @@ class WorkTest extends TestCase
         $ipc
             ->expects($this->once())
             ->method('listen');
+        $env = $this->createMock(Environment::class);
+        $env
+            ->expects($this->any())
+            ->method('workingDirectory')
+            ->willReturn(Path::none());
 
         $this->assertNull($command(
-            $this->createMock(Environment::class),
+            $env,
             new Arguments,
             new Options
         ));

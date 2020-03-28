@@ -12,7 +12,10 @@ use Innmind\LabStation\{
 use Innmind\OperatingSystem\Filesystem;
 use Innmind\Server\Control\Server\Processes;
 use Innmind\CLI\Environment;
-use Innmind\Filesystem\Adapter;
+use Innmind\Filesystem\{
+    Adapter,
+    Name,
+};
 use Innmind\Url\Path;
 use PHPUnit\Framework\TestCase;
 
@@ -58,16 +61,16 @@ class DockerComposeTest extends TestCase
         $env
             ->expects($this->once())
             ->method('workingDirectory')
-            ->willReturn(new Path('/path/to/project/vendor/package'));
+            ->willReturn(Path::of('/path/to/project/vendor/package'));
         $filesystem
             ->expects($this->once())
             ->method('mount')
-            ->with(new Path('/path/to/project/vendor/package'))
+            ->with(Path::of('/path/to/project/vendor/package'))
             ->willReturn($project = $this->createMock(Adapter::class));
         $project
             ->expects($this->once())
-            ->method('has')
-            ->with('docker-compose.yml')
+            ->method('contains')
+            ->with(new Name('docker-compose.yml'))
             ->willReturn(false);
         $processes
             ->expects($this->never())
@@ -89,23 +92,23 @@ class DockerComposeTest extends TestCase
         $env
             ->expects($this->any())
             ->method('workingDirectory')
-            ->willReturn(new Path('/path/to/project/vendor/package'));
+            ->willReturn(Path::of('/path/to/project/vendor/package'));
         $filesystem
             ->expects($this->once())
             ->method('mount')
-            ->with(new Path('/path/to/project/vendor/package'))
+            ->with(Path::of('/path/to/project/vendor/package'))
             ->willReturn($project = $this->createMock(Adapter::class));
         $project
             ->expects($this->once())
-            ->method('has')
-            ->with('docker-compose.yml')
+            ->method('contains')
+            ->with(new Name('docker-compose.yml'))
             ->willReturn(true);
         $processes
             ->expects($this->once())
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return (string) $command === "docker-compose 'up' '-d'" &&
-                    $command->workingDirectory() === '/path/to/project/vendor/package';
+                return $command->toString() === "docker-compose 'up' '-d'" &&
+                    $command->workingDirectory()->toString() === '/path/to/project/vendor/package';
             }));
 
         $this->assertNull($trigger(

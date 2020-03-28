@@ -11,7 +11,7 @@ use Innmind\LabStation\{
     Exception\UnknownMessage,
 };
 use Innmind\IPC\Message;
-use Innmind\Filesystem\MediaType\MediaType;
+use Innmind\MediaType\MediaType;
 use Innmind\Immutable\Str;
 use PHPUnit\Framework\TestCase;
 
@@ -29,10 +29,10 @@ class JsonTest extends TestCase
         $message = $json->encode(new Activity(Type::sourcesModified(), ['foo' => 'bar']));
 
         $this->assertInstanceOf(Message::class, $message);
-        $this->assertSame('application/json', (string) $message->mediaType());
+        $this->assertSame('application/json', $message->mediaType()->toString());
         $this->assertSame(
             '{"type":"sourcesModified","data":{"foo":"bar"}}',
-            (string) $message->content()
+            $message->content()->toString(),
         );
     }
 
