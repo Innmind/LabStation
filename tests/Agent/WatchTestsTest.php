@@ -44,7 +44,7 @@ class WatchTestsTest extends TestCase
             $ipc = $this->createMock(IPC::class),
             $name = new Name('foo')
         );
-        $project = Path::of('/vendor/package');
+        $project = Path::of('/vendor/package/');
         $protocol
             ->expects($this->once())
             ->method('encode')

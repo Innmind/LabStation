@@ -80,14 +80,13 @@ final class Profiler implements Trigger
             return;
         }
 
-        $workingDirectory = \rtrim($workingDirectory->toString(), '/');
-        $workingDirectory .= '/../profiler/public';
+        $workingDirectory = $workingDirectory->resolve(Path::of('../profiler/public'));
 
         $this->processes->execute(
             Command::background('php')
                 ->withShortOption('S')
                 ->withArgument(Url::of($env['PROFILER'])->authority()->toString())
-                ->withWorkingDirectory(Path::of($workingDirectory))
+                ->withWorkingDirectory($workingDirectory)
         );
     }
 }

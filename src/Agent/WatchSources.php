@@ -37,7 +37,7 @@ final class WatchSources implements Agent
 
     public function __invoke(Path $project): void
     {
-        $src = Path::of($project->toString().'/src');
+        $src = $project->resolve(Path::of('src'));
 
         $this->filesystem->watch($src)(function() {
             $monitor = $this->ipc->get($this->monitor);

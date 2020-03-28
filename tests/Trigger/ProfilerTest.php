@@ -322,11 +322,11 @@ class ProfilerTest extends TestCase
         $env
             ->expects($this->any())
             ->method('workingDirectory')
-            ->willReturn(Path::of('/path/to/project/vendor/package'));
+            ->willReturn(Path::of('/path/to/project/vendor/package/'));
         $filesystem
             ->expects($this->once())
             ->method('mount')
-            ->with(Path::of('/path/to/project/vendor/package'))
+            ->with(Path::of('/path/to/project/vendor/package/'))
             ->willReturn($project = $this->createMock(Adapter::class));
         $project
             ->expects($this->once())

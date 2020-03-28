@@ -37,7 +37,7 @@ final class WatchTests implements Agent
 
     public function __invoke(Path $project): void
     {
-        $tests = Path::of($project->toString().'/tests');
+        $tests = $project->resolve(Path::of('tests'));
 
         $this->filesystem->watch($tests)(function() {
             $monitor = $this->ipc->get($this->monitor);
