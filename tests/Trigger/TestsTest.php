@@ -58,7 +58,7 @@ class TestsTest extends TestCase
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === "vendor/bin/phpunit '--colors=always'" &&
+                return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
@@ -130,7 +130,7 @@ class TestsTest extends TestCase
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === "vendor/bin/phpunit '--colors=always'" &&
+                return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
@@ -202,7 +202,7 @@ class TestsTest extends TestCase
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === "vendor/bin/phpunit '--colors=always'" &&
+                return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
@@ -255,7 +255,7 @@ class TestsTest extends TestCase
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === "vendor/bin/phpunit '--colors=always'" &&
+                return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));

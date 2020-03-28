@@ -42,6 +42,7 @@ final class Tests implements Trigger
             ->execute(
                 Command::foreground('vendor/bin/phpunit')
                     ->withOption('colors', 'always')
+                    ->withOption('fail-on-warning')
                     ->withWorkingDirectory($env->workingDirectory())
             );
         $process
