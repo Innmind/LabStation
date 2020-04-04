@@ -8,6 +8,7 @@ use Innmind\LabStation\{
     Trigger,
     Activity,
     Activity\Type,
+    Iteration,
 };
 use Innmind\Server\Control\Server\{
     Processes,
@@ -37,7 +38,8 @@ class PsalmTest extends TestCase
             Trigger::class,
             new Psalm(
                 $this->createMock(Processes::class),
-                $this->createMock(Filesystem::class)
+                $this->createMock(Filesystem::class),
+                new Iteration,
             )
         );
     }
@@ -46,7 +48,8 @@ class PsalmTest extends TestCase
     {
         $trigger = new Psalm(
             $processes = $this->createMock(Processes::class),
-            $this->createMock(Filesystem::class)
+            $this->createMock(Filesystem::class),
+            new Iteration,
         );
         $processes
             ->expects($this->never())
@@ -62,7 +65,8 @@ class PsalmTest extends TestCase
     {
         $trigger = new Psalm(
             $processes = $this->createMock(Processes::class),
-            $filesystem = $this->createMock(Filesystem::class)
+            $filesystem = $this->createMock(Filesystem::class),
+            new Iteration,
         );
         $filesystem
             ->expects($this->once())
@@ -92,7 +96,8 @@ class PsalmTest extends TestCase
     {
         $trigger = new Psalm(
             $processes = $this->createMock(Processes::class),
-            $filesystem = $this->createMock(Filesystem::class)
+            $filesystem = $this->createMock(Filesystem::class),
+            $iteration = new Iteration,
         );
         $workingDirectory = Path::of('/somewhere');
         $filesystem
@@ -149,7 +154,7 @@ class PsalmTest extends TestCase
             ->method('workingDirectory')
             ->willReturn($workingDirectory);
         $env
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('output')
             ->willReturn($output = $this->createMock(Writable::class));
         $env
@@ -169,17 +174,20 @@ class PsalmTest extends TestCase
             ->method('write')
             ->with(Str::of('some error'));
 
+        $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
             $env
         ));
+        $iteration->end($env);
     }
 
     public function testDoesnClearTerminalOnSuccessfullTestWhenSpecifiedOptionProvided()
     {
         $trigger = new Psalm(
             $processes = $this->createMock(Processes::class),
-            $filesystem = $this->createMock(Filesystem::class)
+            $filesystem = $this->createMock(Filesystem::class),
+            $iteration = new Iteration,
         );
         $workingDirectory = Path::of('/somewhere');
         $filesystem
@@ -217,24 +225,27 @@ class PsalmTest extends TestCase
             ->method('workingDirectory')
             ->willReturn($workingDirectory);
         $env
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('output')
             ->willReturn($output = $this->createMock(Writable::class));
         $output
             ->expects($this->never())
             ->method('write');
 
+        $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
             $env
         ));
+        $iteration->end($env);
     }
 
     public function testTriggerTestsSuiteWhenTestsModified()
     {
         $trigger = new Psalm(
             $processes = $this->createMock(Processes::class),
-            $filesystem = $this->createMock(Filesystem::class)
+            $filesystem = $this->createMock(Filesystem::class),
+            $iteration = new Iteration,
         );
         $workingDirectory = Path::of('/somewhere');
         $filesystem
@@ -291,7 +302,7 @@ class PsalmTest extends TestCase
             ->method('workingDirectory')
             ->willReturn($workingDirectory);
         $env
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('output')
             ->willReturn($output = $this->createMock(Writable::class));
         $env
@@ -311,17 +322,20 @@ class PsalmTest extends TestCase
             ->method('write')
             ->with(Str::of('some error'));
 
+        $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::testsModified(), []),
             $env
         ));
+        $iteration->end($env);
     }
 
     public function testSaidMessageIsChangedWhenTestsAreFailing()
     {
         $trigger = new Psalm(
             $processes = $this->createMock(Processes::class),
-            $filesystem = $this->createMock(Filesystem::class)
+            $filesystem = $this->createMock(Filesystem::class),
+            $iteration = new Iteration,
         );
         $workingDirectory = Path::of('/somewhere');
         $filesystem
@@ -375,24 +389,27 @@ class PsalmTest extends TestCase
             ->method('arguments')
             ->willReturn(Sequence::strings());
         $env
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('output')
             ->willReturn($output = $this->createMock(Writable::class));
         $output
             ->expects($this->never())
             ->method('write');
 
+        $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
             $env
         ));
+        $iteration->end($env);
     }
 
     public function testNoMessageIsSpokenWhenUsingTheSilentOption()
     {
         $trigger = new Psalm(
             $processes = $this->createMock(Processes::class),
-            $filesystem = $this->createMock(Filesystem::class)
+            $filesystem = $this->createMock(Filesystem::class),
+            $iteration = new Iteration,
         );
         $workingDirectory = Path::of('/somewhere');
         $filesystem
@@ -415,6 +432,10 @@ class PsalmTest extends TestCase
             ->willReturn($process = $this->createMock(Process::class));
         $process
             ->expects($this->once())
+            ->method('exitCode')
+            ->willReturn(new ExitCode(0));
+        $process
+            ->expects($this->once())
             ->method('output')
             ->willReturn($output = $this->createMock(Output::class));
         $output
@@ -426,13 +447,15 @@ class PsalmTest extends TestCase
             ->method('workingDirectory')
             ->willReturn($workingDirectory);
         $env
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('arguments')
             ->willReturn(Sequence::of('string', '--silent'));
 
+        $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
             $env
         ));
+        $iteration->end($env);
     }
 }

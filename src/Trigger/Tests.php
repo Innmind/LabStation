@@ -7,6 +7,7 @@ use Innmind\LabStation\{
     Trigger,
     Activity,
     Activity\Type,
+    Iteration,
 };
 use Innmind\CLI\Environment;
 use Innmind\Server\Control\Server\{
@@ -19,10 +20,12 @@ use Innmind\Immutable\Str;
 final class Tests implements Trigger
 {
     private Processes $processes;
+    private Iteration $iteration;
 
-    public function __construct(Processes $processes)
+    public function __construct(Processes $processes, Iteration $iteration)
     {
         $this->processes = $processes;
+        $this->iteration = $iteration;
     }
 
     public function __invoke(Activity $activity, Environment $env): void
@@ -55,12 +58,16 @@ final class Tests implements Trigger
                 }
             });
         $process->wait();
+        $successful = $process->exitCode()->isSuccessful();
+
+        if (!$successful) {
+            $this->iteration->failing();
+        }
 
         if ($env->arguments()->contains('--silent')) {
             return;
         }
 
-        $successful = $process->exitCode()->isSuccessful();
         $text = 'PHPUnit : ';
         $text .= $successful ? 'ok' : 'failing';
 
@@ -71,10 +78,5 @@ final class Tests implements Trigger
                     ->withArgument($text),
             )
             ->wait();
-
-        // clear terminal
-        if ($successful && !$env->arguments()->contains('--keep-output')) {
-            $output->write(Str::of("\033[2J\033[H"));
-        }
     }
 }

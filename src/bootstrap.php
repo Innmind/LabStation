@@ -27,6 +27,7 @@ function bootstrap(OperatingSystem $os): Commands
                 ),
                 $ipc,
                 $monitor,
+                $iteration = new Iteration,
                 new Trigger\All(
                     new Trigger\Graphs(
                         $os->filesystem(),
@@ -42,10 +43,11 @@ function bootstrap(OperatingSystem $os): Commands
                         $os->filesystem(),
                         $os->control()->processes(),
                     ),
-                    new Trigger\Tests($os->control()->processes()),
+                    new Trigger\Tests($os->control()->processes(), $iteration),
                     new Trigger\Psalm(
                         $os->control()->processes(),
-                        $os->filesystem()
+                        $os->filesystem(),
+                        $iteration,
                     ),
                     new Trigger\ComposerUpdate(
                         $os->control()->processes(),

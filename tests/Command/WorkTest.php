@@ -8,6 +8,7 @@ use Innmind\LabStation\{
     Monitor,
     Protocol,
     Trigger,
+    Iteration,
 };
 use Innmind\CLI\{
     Command,
@@ -35,6 +36,7 @@ class WorkTest extends TestCase
                     $this->createMock(Manager::class),
                     $this->createMock(IPC::class),
                     new Name('foo'),
+                    new Iteration,
                     $this->createMock(Trigger::class)
                 )
             )
@@ -51,6 +53,7 @@ class WorkTest extends TestCase
                     $this->createMock(Manager::class),
                     $this->createMock(IPC::class),
                     new Name('foo'),
+                    new Iteration,
                     $this->createMock(Trigger::class)
                 )
             ))->toString()
@@ -65,6 +68,7 @@ class WorkTest extends TestCase
                 $this->createMock(Manager::class),
                 $ipc = $this->createMock(IPC::class),
                 new Name('foo'),
+                new Iteration,
                 $this->createMock(Trigger::class)
             )
         );

@@ -8,6 +8,7 @@ use Innmind\LabStation\{
     Trigger,
     Activity,
     Activity\Type,
+    Iteration,
 };
 use Innmind\Server\Control\Server\{
     Processes,
@@ -30,14 +31,15 @@ class TestsTest extends TestCase
     {
         $this->assertInstanceOf(
             Trigger::class,
-            new Tests($this->createMock(Processes::class))
+            new Tests($this->createMock(Processes::class), new Iteration)
         );
     }
 
     public function testDoNothingWhenNotOfExpectedType()
     {
         $trigger = new Tests(
-            $processes = $this->createMock(Processes::class)
+            $processes = $this->createMock(Processes::class),
+            new Iteration,
         );
         $processes
             ->expects($this->never())
@@ -52,7 +54,8 @@ class TestsTest extends TestCase
     public function testTriggerTestsSuiteWhenSourcesModified()
     {
         $trigger = new Tests(
-            $processes = $this->createMock(Processes::class)
+            $processes = $this->createMock(Processes::class),
+            $iteration = new Iteration,
         );
         $processes
             ->expects($this->at(0))
@@ -99,7 +102,7 @@ class TestsTest extends TestCase
             ->method('workingDirectory')
             ->willReturn(Path::of('/somewhere'));
         $env
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('output')
             ->willReturn($output = $this->createMock(Writable::class));
         $env
@@ -119,16 +122,19 @@ class TestsTest extends TestCase
             ->method('write')
             ->with(Str::of('some error'));
 
+        $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
             $env
         ));
+        $iteration->end($env);
     }
 
     public function testDoesnClearTerminalOnSuccessfullTestWhenSpecifiedOptionProvided()
     {
         $trigger = new Tests(
-            $processes = $this->createMock(Processes::class)
+            $processes = $this->createMock(Processes::class),
+            $iteration = new Iteration,
         );
         $processes
             ->expects($this->at(0))
@@ -161,23 +167,26 @@ class TestsTest extends TestCase
             ->method('workingDirectory')
             ->willReturn(Path::of('/somewhere'));
         $env
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('output')
             ->willReturn($output = $this->createMock(Writable::class));
         $output
             ->expects($this->never())
             ->method('write');
 
+        $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
             $env
         ));
+        $iteration->end($env);
     }
 
     public function testTriggerTestsSuiteWhenTestsModified()
     {
         $trigger = new Tests(
-            $processes = $this->createMock(Processes::class)
+            $processes = $this->createMock(Processes::class),
+            $iteration = new Iteration,
         );
         $processes
             ->expects($this->at(0))
@@ -224,7 +233,7 @@ class TestsTest extends TestCase
             ->method('workingDirectory')
             ->willReturn(Path::of('/somewhere'));
         $env
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('output')
             ->willReturn($output = $this->createMock(Writable::class));
         $env
@@ -244,16 +253,19 @@ class TestsTest extends TestCase
             ->method('write')
             ->with(Str::of('some error'));
 
+        $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::testsModified(), []),
             $env
         ));
+        $iteration->end($env);
     }
 
     public function testSaidMessageIsChangedWhenTestsAreFailing()
     {
         $trigger = new Tests(
-            $processes = $this->createMock(Processes::class)
+            $processes = $this->createMock(Processes::class),
+            $iteration = new Iteration,
         );
         $processes
             ->expects($this->at(0))
@@ -297,23 +309,26 @@ class TestsTest extends TestCase
             ->method('arguments')
             ->willReturn(Sequence::strings());
         $env
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('output')
             ->willReturn($output = $this->createMock(Writable::class));
         $output
             ->expects($this->never())
             ->method('write');
 
+        $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
             $env
         ));
+        $iteration->end($env);
     }
 
     public function testNoMessageIsSpokenWhenUsingTheSilentOption()
     {
         $trigger = new Tests(
-            $processes = $this->createMock(Processes::class)
+            $processes = $this->createMock(Processes::class),
+            $iteration = new Iteration,
         );
         $processes
             ->expects($this->at(0))
@@ -323,6 +338,10 @@ class TestsTest extends TestCase
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
+        $process
+            ->expects($this->once())
+            ->method('exitCode')
+            ->willReturn(new ExitCode(0));
         $process
             ->expects($this->once())
             ->method('output')
@@ -336,13 +355,15 @@ class TestsTest extends TestCase
             ->method('workingDirectory')
             ->willReturn(Path::of('/somewhere'));
         $env
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('arguments')
             ->willReturn(Sequence::of('string', '--silent'));
 
+        $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
             $env
         ));
+        $iteration->end($env);
     }
 }
