@@ -18,6 +18,7 @@ final class Monitor
     private Manager $manager;
     private IPC $ipc;
     private Name $name;
+    private Iteration $iteration;
     private Trigger $trigger;
     /** @var list<Agent> */
     private array $agents;
@@ -27,6 +28,7 @@ final class Monitor
         Manager $manager,
         IPC $ipc,
         Name $name,
+        Iteration $iteration,
         Trigger $trigger,
         Agent ...$agents
     ) {
@@ -34,6 +36,7 @@ final class Monitor
         $this->manager = $manager;
         $this->ipc = $ipc;
         $this->name = $name;
+        $this->iteration = $iteration;
         $this->trigger = $trigger;
         $this->agents = $agents;
     }
@@ -57,7 +60,9 @@ final class Monitor
 
         $this->ipc->listen($this->name)(function(Message $message) use ($env): void {
             $activity = $this->protocol->decode($message);
+            $this->iteration->start();
             ($this->trigger)($activity, $env);
+            $this->iteration->end($env);
         });
 
         $agents->kill();

@@ -7,6 +7,7 @@ use Innmind\LabStation\{
     Trigger,
     Activity,
     Activity\Type,
+    Iteration,
 };
 use Innmind\CLI\Environment;
 use Innmind\Server\Control\Server\{
@@ -22,11 +23,16 @@ final class Psalm implements Trigger
 {
     private Processes $processes;
     private Filesystem $filesystem;
+    private Iteration $iteration;
 
-    public function __construct(Processes $processes, Filesystem $filesystem)
-    {
+    public function __construct(
+        Processes $processes,
+        Filesystem $filesystem,
+        Iteration $iteration
+    ) {
         $this->processes = $processes;
         $this->filesystem = $filesystem;
+        $this->iteration = $iteration;
     }
 
     public function __invoke(Activity $activity, Environment $env): void
@@ -63,12 +69,16 @@ final class Psalm implements Trigger
                 }
             });
         $process->wait();
+        $successful = $process->exitCode()->isSuccessful();
+
+        if (!$successful) {
+            $this->iteration->failing();
+        }
 
         if ($env->arguments()->contains('--silent')) {
             return;
         }
 
-        $successful = $process->exitCode()->isSuccessful();
         $text = 'Psalm : ';
         $text .= $successful ? 'ok' : 'failing';
 
@@ -79,10 +89,5 @@ final class Psalm implements Trigger
                     ->withArgument($text)
             )
             ->wait();
-
-        // clear terminal
-        if ($successful && !$env->arguments()->contains('--keep-output')) {
-            $output->write(Str::of("\033[2J\033[H"));
-        }
     }
 }

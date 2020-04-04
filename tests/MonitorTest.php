@@ -10,6 +10,7 @@ use Innmind\LabStation\{
     Agent,
     Activity,
     Activity\Type,
+    Iteration,
 };
 use Innmind\CLI\Environment;
 use Innmind\ProcessManager\Manager;
@@ -20,6 +21,7 @@ use Innmind\IPC\{
     Message,
 };
 use Innmind\Url\Path;
+use Innmind\Immutable\Sequence;
 use PHPUnit\Framework\TestCase;
 
 class MonitorTest extends TestCase
@@ -31,12 +33,17 @@ class MonitorTest extends TestCase
             $manager = $this->createMock(Manager::class),
             $ipc = $this->createMock(IPC::class),
             $name = new Name('monitor'),
+            new Iteration,
             $trigger = $this->createMock(Trigger::class),
             $agent1 = $this->createMock(Agent::class),
             $agent2 = $this->createMock(Agent::class)
         );
         $message = $this->createMock(Message::class);
         $env = $this->createMock(Environment::class);
+        $env
+            ->expects($this->any())
+            ->method('arguments')
+            ->willReturn(Sequence::strings());
         $env
             ->expects($this->once())
             ->method('workingDirectory')
