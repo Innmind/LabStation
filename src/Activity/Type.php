@@ -23,6 +23,12 @@ final class Type
             case 'testsModified':
                 return self::testsModified();
 
+            case 'fixturesModified':
+                return self::fixturesModified();
+
+            case 'propertiesModified':
+                return self::propertiesModified();
+
             case 'start':
                 return self::start();
         }
@@ -38,6 +44,16 @@ final class Type
     public static function testsModified(): self
     {
         return new self('testsModified');
+    }
+
+    public static function fixturesModified(): self
+    {
+        return new self('fixturesModified');
+    }
+
+    public static function propertiesModified(): self
+    {
+        return new self('propertiesModified');
     }
 
     public static function start(): self

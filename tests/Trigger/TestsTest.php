@@ -24,9 +24,15 @@ use Innmind\Immutable\{
     Str,
 };
 use PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\{
+    PHPUnit\BlackBox,
+    Set,
+};
 
 class TestsTest extends TestCase
 {
+    use BlackBox;
+
     public function testInterface()
     {
         $this->assertInstanceOf(
@@ -51,83 +57,92 @@ class TestsTest extends TestCase
         ));
     }
 
-    public function testTriggerTestsSuiteWhenSourcesModified()
+    public function testTriggerTestsSuiteWhenActivity()
     {
-        $trigger = new Tests(
-            $processes = $this->createMock(Processes::class),
-            $iteration = new Iteration,
-        );
-        $processes
-            ->expects($this->at(0))
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
-                    $command->workingDirectory()->toString() === '/somewhere';
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
-        $process
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn($output = $this->createMock(Output::class));
-        $output
-            ->expects($this->once())
-            ->method('foreach')
-            ->with($this->callback(static function($listen): bool {
-                $listen(Str::of('some output'), Output\Type::output());
-                $listen(Str::of('some error'), Output\Type::error());
+        $this
+            ->forAll(Set\Elements::of(
+                Type::sourcesModified(),
+                Type::testsModified(),
+                Type::fixturesModified(),
+                Type::propertiesModified(),
+            ))
+            ->then(function($type) {
+                $trigger = new Tests(
+                    $processes = $this->createMock(Processes::class),
+                    $iteration = new Iteration,
+                );
+                $processes
+                    ->expects($this->at(0))
+                    ->method('execute')
+                    ->with($this->callback(static function($command): bool {
+                        return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
+                            $command->workingDirectory()->toString() === '/somewhere';
+                    }))
+                    ->willReturn($process = $this->createMock(Process::class));
+                $process
+                    ->expects($this->once())
+                    ->method('output')
+                    ->willReturn($output = $this->createMock(Output::class));
+                $output
+                    ->expects($this->once())
+                    ->method('foreach')
+                    ->with($this->callback(static function($listen): bool {
+                        $listen(Str::of('some output'), Output\Type::output());
+                        $listen(Str::of('some error'), Output\Type::error());
 
-                return true;
-            }));
-        $process
-            ->expects($this->once())
-            ->method('wait')
-            ->will($this->returnSelf());
-        $process
-            ->expects($this->once())
-            ->method('exitCode')
-            ->willReturn(new ExitCode(0));
-        $processes
-            ->expects($this->at(1))
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "say 'PHPUnit : ok'";
-            }));
-        $env = $this->createMock(Environment::class);
-        $env
-            ->expects($this->any())
-            ->method('arguments')
-            ->willReturn(Sequence::strings());
-        $env
-            ->expects($this->once())
-            ->method('workingDirectory')
-            ->willReturn(Path::of('/somewhere'));
-        $env
-            ->expects($this->any())
-            ->method('output')
-            ->willReturn($output = $this->createMock(Writable::class));
-        $env
-            ->expects($this->once())
-            ->method('error')
-            ->willReturn($error = $this->createMock(Writable::class));
-        $output
-            ->expects($this->at(0))
-            ->method('write')
-            ->with(Str::of('some output'));
-        $output
-            ->expects($this->at(1))
-            ->method('write')
-            ->with(Str::of("\033[2J\033[H"));
-        $error
-            ->expects($this->once())
-            ->method('write')
-            ->with(Str::of('some error'));
+                        return true;
+                    }));
+                $process
+                    ->expects($this->once())
+                    ->method('wait')
+                    ->will($this->returnSelf());
+                $process
+                    ->expects($this->once())
+                    ->method('exitCode')
+                    ->willReturn(new ExitCode(0));
+                $processes
+                    ->expects($this->at(1))
+                    ->method('execute')
+                    ->with($this->callback(static function($command): bool {
+                        return $command->toString() === "say 'PHPUnit : ok'";
+                    }));
+                $env = $this->createMock(Environment::class);
+                $env
+                    ->expects($this->any())
+                    ->method('arguments')
+                    ->willReturn(Sequence::strings());
+                $env
+                    ->expects($this->once())
+                    ->method('workingDirectory')
+                    ->willReturn(Path::of('/somewhere'));
+                $env
+                    ->expects($this->any())
+                    ->method('output')
+                    ->willReturn($output = $this->createMock(Writable::class));
+                $env
+                    ->expects($this->once())
+                    ->method('error')
+                    ->willReturn($error = $this->createMock(Writable::class));
+                $output
+                    ->expects($this->at(0))
+                    ->method('write')
+                    ->with(Str::of('some output'));
+                $output
+                    ->expects($this->at(1))
+                    ->method('write')
+                    ->with(Str::of("\033[2J\033[H"));
+                $error
+                    ->expects($this->once())
+                    ->method('write')
+                    ->with(Str::of('some error'));
 
-        $iteration->start();
-        $this->assertNull($trigger(
-            new Activity(Type::sourcesModified(), []),
-            $env
-        ));
-        $iteration->end($env);
+                $iteration->start();
+                $this->assertNull($trigger(
+                    new Activity($type, []),
+                    $env
+                ));
+                $iteration->end($env);
+            });
     }
 
     public function testDoesnClearTerminalOnSuccessfullTestWhenSpecifiedOptionProvided()
@@ -177,85 +192,6 @@ class TestsTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $env
-        ));
-        $iteration->end($env);
-    }
-
-    public function testTriggerTestsSuiteWhenTestsModified()
-    {
-        $trigger = new Tests(
-            $processes = $this->createMock(Processes::class),
-            $iteration = new Iteration,
-        );
-        $processes
-            ->expects($this->at(0))
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
-                    $command->workingDirectory()->toString() === '/somewhere';
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
-        $process
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn($output = $this->createMock(Output::class));
-        $output
-            ->expects($this->once())
-            ->method('foreach')
-            ->with($this->callback(static function($listen): bool {
-                $listen(Str::of('some output'), Output\Type::output());
-                $listen(Str::of('some error'), Output\Type::error());
-
-                return true;
-            }));
-        $process
-            ->expects($this->once())
-            ->method('wait')
-            ->will($this->returnSelf());
-        $process
-            ->expects($this->once())
-            ->method('exitCode')
-            ->willReturn(new ExitCode(0));
-        $processes
-            ->expects($this->at(1))
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "say 'PHPUnit : ok'";
-            }));
-        $env = $this->createMock(Environment::class);
-        $env
-            ->expects($this->any())
-            ->method('arguments')
-            ->willReturn(Sequence::strings());
-        $env
-            ->expects($this->once())
-            ->method('workingDirectory')
-            ->willReturn(Path::of('/somewhere'));
-        $env
-            ->expects($this->any())
-            ->method('output')
-            ->willReturn($output = $this->createMock(Writable::class));
-        $env
-            ->expects($this->once())
-            ->method('error')
-            ->willReturn($error = $this->createMock(Writable::class));
-        $output
-            ->expects($this->at(0))
-            ->method('write')
-            ->with(Str::of('some output'));
-        $output
-            ->expects($this->at(1))
-            ->method('write')
-            ->with(Str::of("\033[2J\033[H"));
-        $error
-            ->expects($this->once())
-            ->method('write')
-            ->with(Str::of('some error'));
-
-        $iteration->start();
-        $this->assertNull($trigger(
-            new Activity(Type::testsModified(), []),
             $env
         ));
         $iteration->end($env);
