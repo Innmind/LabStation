@@ -3,7 +3,10 @@ declare(strict_types = 1);
 
 namespace Tests\Innmind\LabStation\Activity;
 
-use Innmind\LabStation\Activity\Type;
+use Innmind\LabStation\{
+    Activity\Type,
+    Exception\LogicException,
+};
 use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
     PHPUnit\BlackBox,
@@ -20,6 +23,26 @@ class TypeTest extends TestCase
             ->forAll($this->names())
             ->then(function($name) {
                 $this->assertInstanceOf(Type::class, Type::$name());
+            });
+    }
+
+    public function testOf()
+    {
+        $this
+            ->forAll($this->names())
+            ->then(function($name) {
+                $this->assertTrue(Type::$name()->equals(Type::of($name)));
+            });
+    }
+
+    public function testUnknownNameThrows()
+    {
+        $this
+            ->forAll(Set\Strings::any())
+            ->then(function($unknown) {
+                $this->expectException(LogicException::class);
+
+                Type::of($unknown);
             });
     }
 
