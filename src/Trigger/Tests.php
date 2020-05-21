@@ -32,7 +32,9 @@ final class Tests implements Trigger
     {
         if (
             !$activity->is(Type::sourcesModified()) &&
-            !$activity->is(Type::testsModified())
+            !$activity->is(Type::testsModified()) &&
+            !$activity->is(Type::fixturesModified()) &&
+            !$activity->is(Type::propertiesModified())
         ) {
             return;
         }
