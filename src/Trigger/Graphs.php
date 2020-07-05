@@ -77,13 +77,6 @@ final class Graphs implements Trigger
                 ->withWorkingDirectory($this->tmp),
             $env->error(),
         );
-        $this->open(
-            Command::foreground('dependency-graph')
-                ->withArgument('vendor')
-                ->withArgument($vendor->toString())
-                ->withWorkingDirectory($this->tmp),
-            $env->error(),
-        );
     }
 
     private function load(Environment $env): Str
