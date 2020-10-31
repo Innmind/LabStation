@@ -49,6 +49,11 @@ function bootstrap(OperatingSystem $os): Commands
                         $os->filesystem(),
                         $iteration,
                     ),
+                    new Trigger\CodingStandard(
+                        $os->control()->processes(),
+                        $os->filesystem(),
+                        $iteration,
+                    ),
                     new Trigger\ComposerUpdate(
                         $os->control()->processes(),
                         $os->sockets(),
