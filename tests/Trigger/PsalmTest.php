@@ -114,7 +114,7 @@ class PsalmTest extends TestCase
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === "vendor/bin/psalm" &&
+                return $command->toString() === 'vendor/bin/psalm' &&
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
@@ -204,7 +204,7 @@ class PsalmTest extends TestCase
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === "vendor/bin/psalm" &&
+                return $command->toString() === 'vendor/bin/psalm' &&
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
@@ -262,7 +262,7 @@ class PsalmTest extends TestCase
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === "vendor/bin/psalm" &&
+                return $command->toString() === 'vendor/bin/psalm' &&
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
@@ -352,7 +352,7 @@ class PsalmTest extends TestCase
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === "vendor/bin/psalm" &&
+                return $command->toString() === 'vendor/bin/psalm' &&
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
@@ -426,7 +426,7 @@ class PsalmTest extends TestCase
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === "vendor/bin/psalm" &&
+                return $command->toString() === 'vendor/bin/psalm' &&
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
