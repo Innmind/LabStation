@@ -4,7 +4,7 @@ declare(strict_types = 1);
 namespace Tests\Innmind\LabStation\Trigger;
 
 use Innmind\LabStation\{
-    Trigger\Psalm,
+    Trigger\CodingStandard,
     Trigger,
     Activity,
     Activity\Type,
@@ -30,13 +30,13 @@ use Innmind\Immutable\{
 };
 use PHPUnit\Framework\TestCase;
 
-class PsalmTest extends TestCase
+class CodingStandardTest extends TestCase
 {
     public function testInterface()
     {
         $this->assertInstanceOf(
             Trigger::class,
-            new Psalm(
+            new CodingStandard(
                 $this->createMock(Processes::class),
                 $this->createMock(Filesystem::class),
                 new Iteration,
@@ -46,7 +46,7 @@ class PsalmTest extends TestCase
 
     public function testDoNothingWhenNotOfExpectedType()
     {
-        $trigger = new Psalm(
+        $trigger = new CodingStandard(
             $processes = $this->createMock(Processes::class),
             $this->createMock(Filesystem::class),
             new Iteration,
@@ -63,7 +63,7 @@ class PsalmTest extends TestCase
 
     public function testDoNothingWhenPsalmNotInstalled()
     {
-        $trigger = new Psalm(
+        $trigger = new CodingStandard(
             $processes = $this->createMock(Processes::class),
             $filesystem = $this->createMock(Filesystem::class),
             new Iteration,
@@ -75,7 +75,7 @@ class PsalmTest extends TestCase
         $directory
             ->expects($this->once())
             ->method('contains')
-            ->with(new Name('psalm.xml'))
+            ->with(new Name('.php_cs.dist'))
             ->willReturn(false);
         $processes
             ->expects($this->never())
@@ -94,7 +94,7 @@ class PsalmTest extends TestCase
 
     public function testTriggerTestsSuiteWhenSourcesModified()
     {
-        $trigger = new Psalm(
+        $trigger = new CodingStandard(
             $processes = $this->createMock(Processes::class),
             $filesystem = $this->createMock(Filesystem::class),
             $iteration = new Iteration,
@@ -108,13 +108,13 @@ class PsalmTest extends TestCase
         $directory
             ->expects($this->once())
             ->method('contains')
-            ->with(new Name('psalm.xml'))
+            ->with(new Name('.php_cs.dist'))
             ->willReturn(true);
         $processes
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === 'vendor/bin/psalm' &&
+                return $command->toString() === "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'" &&
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
@@ -142,7 +142,7 @@ class PsalmTest extends TestCase
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === "say 'Psalm : ok'";
+                return $command->toString() === "say 'Coding Standard : right'";
             }));
         $env = $this->createMock(Environment::class);
         $env
@@ -184,7 +184,7 @@ class PsalmTest extends TestCase
 
     public function testDoesnClearTerminalOnSuccessfullTestWhenSpecifiedOptionProvided()
     {
-        $trigger = new Psalm(
+        $trigger = new CodingStandard(
             $processes = $this->createMock(Processes::class),
             $filesystem = $this->createMock(Filesystem::class),
             $iteration = new Iteration,
@@ -198,13 +198,13 @@ class PsalmTest extends TestCase
         $directory
             ->expects($this->once())
             ->method('contains')
-            ->with(new Name('psalm.xml'))
+            ->with(new Name('.php_cs.dist'))
             ->willReturn(true);
         $processes
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === 'vendor/bin/psalm' &&
+                return $command->toString() === "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'" &&
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
@@ -242,7 +242,7 @@ class PsalmTest extends TestCase
 
     public function testTriggerTestsSuiteWhenTestsModified()
     {
-        $trigger = new Psalm(
+        $trigger = new CodingStandard(
             $processes = $this->createMock(Processes::class),
             $filesystem = $this->createMock(Filesystem::class),
             $iteration = new Iteration,
@@ -256,13 +256,13 @@ class PsalmTest extends TestCase
         $directory
             ->expects($this->once())
             ->method('contains')
-            ->with(new Name('psalm.xml'))
+            ->with(new Name('.php_cs.dist'))
             ->willReturn(true);
         $processes
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === 'vendor/bin/psalm' &&
+                return $command->toString() === "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'" &&
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
@@ -290,7 +290,7 @@ class PsalmTest extends TestCase
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === "say 'Psalm : ok'";
+                return $command->toString() === "say 'Coding Standard : right'";
             }));
         $env = $this->createMock(Environment::class);
         $env
@@ -332,7 +332,7 @@ class PsalmTest extends TestCase
 
     public function testSaidMessageIsChangedWhenTestsAreFailing()
     {
-        $trigger = new Psalm(
+        $trigger = new CodingStandard(
             $processes = $this->createMock(Processes::class),
             $filesystem = $this->createMock(Filesystem::class),
             $iteration = new Iteration,
@@ -346,13 +346,13 @@ class PsalmTest extends TestCase
         $directory
             ->expects($this->once())
             ->method('contains')
-            ->with(new Name('psalm.xml'))
+            ->with(new Name('.php_cs.dist'))
             ->willReturn(true);
         $processes
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === 'vendor/bin/psalm' &&
+                return $command->toString() === "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'" &&
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
@@ -377,7 +377,7 @@ class PsalmTest extends TestCase
             ->expects($this->at(1))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === "say 'Psalm : failing'";
+                return $command->toString() === "say 'Coding Standard : wrong'";
             }));
         $env = $this->createMock(Environment::class);
         $env
@@ -406,7 +406,7 @@ class PsalmTest extends TestCase
 
     public function testNoMessageIsSpokenWhenUsingTheSilentOption()
     {
-        $trigger = new Psalm(
+        $trigger = new CodingStandard(
             $processes = $this->createMock(Processes::class),
             $filesystem = $this->createMock(Filesystem::class),
             $iteration = new Iteration,
@@ -420,13 +420,13 @@ class PsalmTest extends TestCase
         $directory
             ->expects($this->once())
             ->method('contains')
-            ->with(new Name('psalm.xml'))
+            ->with(new Name('.php_cs.dist'))
             ->willReturn(true);
         $processes
             ->expects($this->at(0))
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === 'vendor/bin/psalm' &&
+                return $command->toString() === "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'" &&
                     $command->workingDirectory()->toString() === '/somewhere';
             }))
             ->willReturn($process = $this->createMock(Process::class));
