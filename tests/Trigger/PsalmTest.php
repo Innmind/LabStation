@@ -111,13 +111,21 @@ class PsalmTest extends TestCase
             ->with(new Name('psalm.xml'))
             ->willReturn(true);
         $processes
-            ->expects($this->at(0))
+            ->expects($this->exactly(2))
             ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === 'vendor/bin/psalm' &&
-                    $command->workingDirectory()->toString() === '/somewhere';
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
+            ->withConsecutive(
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === 'vendor/bin/psalm' &&
+                        $command->workingDirectory()->toString() === '/somewhere';
+                })],
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === "say 'Psalm : ok'";
+                })],
+            )
+            ->will($this->onConsecutiveCalls(
+                $process = $this->createMock(Process::class),
+                $this->createMock(Process::class),
+            ));
         $process
             ->expects($this->once())
             ->method('output')
@@ -138,12 +146,6 @@ class PsalmTest extends TestCase
             ->expects($this->once())
             ->method('exitCode')
             ->willReturn(new ExitCode(0));
-        $processes
-            ->expects($this->at(1))
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "say 'Psalm : ok'";
-            }));
         $env = $this->createMock(Environment::class);
         $env
             ->expects($this->any())
@@ -162,13 +164,12 @@ class PsalmTest extends TestCase
             ->method('error')
             ->willReturn($error = $this->createMock(Writable::class));
         $output
-            ->expects($this->at(0))
+            ->expects($this->exactly(2))
             ->method('write')
-            ->with(Str::of('some output'));
-        $output
-            ->expects($this->at(1))
-            ->method('write')
-            ->with(Str::of("\033[2J\033[H"));
+            ->withConsecutive(
+                [Str::of('some output')],
+                [Str::of("\033[2J\033[H")],
+            );
         $error
             ->expects($this->once())
             ->method('write')
@@ -201,13 +202,18 @@ class PsalmTest extends TestCase
             ->with(new Name('psalm.xml'))
             ->willReturn(true);
         $processes
-            ->expects($this->at(0))
+            ->expects($this->exactly(2))
             ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === 'vendor/bin/psalm' &&
-                    $command->workingDirectory()->toString() === '/somewhere';
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
+            ->withConsecutive(
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === 'vendor/bin/psalm' &&
+                        $command->workingDirectory()->toString() === '/somewhere';
+                })],
+            )
+            ->will($this->onConsecutiveCalls(
+                $process = $this->createMock(Process::class),
+                $this->createMock(Process::class),
+            ));
         $process
             ->expects($this->once())
             ->method('wait');
@@ -259,13 +265,21 @@ class PsalmTest extends TestCase
             ->with(new Name('psalm.xml'))
             ->willReturn(true);
         $processes
-            ->expects($this->at(0))
+            ->expects($this->exactly(2))
             ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === 'vendor/bin/psalm' &&
-                    $command->workingDirectory()->toString() === '/somewhere';
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
+            ->withConsecutive(
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === 'vendor/bin/psalm' &&
+                        $command->workingDirectory()->toString() === '/somewhere';
+                })],
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === "say 'Psalm : ok'";
+                })],
+            )
+            ->will($this->onConsecutiveCalls(
+                $process = $this->createMock(Process::class),
+                $this->createMock(Process::class),
+            ));
         $process
             ->expects($this->once())
             ->method('output')
@@ -286,12 +300,6 @@ class PsalmTest extends TestCase
             ->expects($this->once())
             ->method('exitCode')
             ->willReturn(new ExitCode(0));
-        $processes
-            ->expects($this->at(1))
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "say 'Psalm : ok'";
-            }));
         $env = $this->createMock(Environment::class);
         $env
             ->expects($this->any())
@@ -310,13 +318,12 @@ class PsalmTest extends TestCase
             ->method('error')
             ->willReturn($error = $this->createMock(Writable::class));
         $output
-            ->expects($this->at(0))
+            ->expects($this->exactly(2))
             ->method('write')
-            ->with(Str::of('some output'));
-        $output
-            ->expects($this->at(1))
-            ->method('write')
-            ->with(Str::of("\033[2J\033[H"));
+            ->withConsecutive(
+                [Str::of('some output')],
+                [Str::of("\033[2J\033[H")],
+            );
         $error
             ->expects($this->once())
             ->method('write')
@@ -349,13 +356,21 @@ class PsalmTest extends TestCase
             ->with(new Name('psalm.xml'))
             ->willReturn(true);
         $processes
-            ->expects($this->at(0))
+            ->expects($this->exactly(2))
             ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === 'vendor/bin/psalm' &&
-                    $command->workingDirectory()->toString() === '/somewhere';
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
+            ->withConsecutive(
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === 'vendor/bin/psalm' &&
+                        $command->workingDirectory()->toString() === '/somewhere';
+                })],
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === "say 'Psalm : failing'";
+                })],
+            )
+            ->will($this->onConsecutiveCalls(
+                $process = $this->createMock(Process::class),
+                $this->createMock(Process::class),
+            ));
         $process
             ->expects($this->once())
             ->method('output')
@@ -373,12 +388,6 @@ class PsalmTest extends TestCase
             ->expects($this->once())
             ->method('exitCode')
             ->willReturn(new ExitCode(1));
-        $processes
-            ->expects($this->at(1))
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "say 'Psalm : failing'";
-            }));
         $env = $this->createMock(Environment::class);
         $env
             ->expects($this->any())
@@ -423,7 +432,7 @@ class PsalmTest extends TestCase
             ->with(new Name('psalm.xml'))
             ->willReturn(true);
         $processes
-            ->expects($this->at(0))
+            ->expects($this->once())
             ->method('execute')
             ->with($this->callback(static function($command): bool {
                 return $command->toString() === 'vendor/bin/psalm' &&

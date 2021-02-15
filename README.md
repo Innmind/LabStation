@@ -1,6 +1,6 @@
 # Lab Station
 
-[![Build Status](https://github.com/Innmind/LabStation/workflows/CI/badge.svg)](https://github.com/Innmind/LabStation/actions?query=workflow%3ACI)
+[![Build Status](https://github.com/Innmind/LabStation/workflows/CI/badge.svg?branch=master)](https://github.com/Innmind/LabStation/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/Innmind/LabStation/branch/develop/graph/badge.svg)](https://codecov.io/gh/Innmind/LabStation)
 [![Type Coverage](https://shepherd.dev/github/Innmind/LabStation/coverage.svg)](https://shepherd.dev/github/Innmind/LabStation)
 

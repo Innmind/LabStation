@@ -111,13 +111,13 @@ class ComposerUpdateTest extends TestCase
             ->method('error')
             ->willReturn($error = $this->createMock(Writable::class));
         $output
-            ->expects($this->at(0))
+            ->expects($this->exactly(3))
             ->method('write')
-            ->with(Str::of('Update dependencies? [Y/n] '));
-        $output
-            ->expects($this->at(1))
-            ->method('write')
-            ->with(Str::of('some output'));
+            ->withConsecutive(
+                [Str::of('Update dependencies? [Y/n] ')],
+                [Str::of('some output')],
+                [Str::of("Dependencies updated!\n")],
+            );
         $error
             ->expects($this->once())
             ->method('write')

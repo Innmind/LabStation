@@ -60,7 +60,7 @@ final class Tests implements Trigger
                 }
             });
         $process->wait();
-        $successful = $process->exitCode()->isSuccessful();
+        $successful = $process->exitCode()->successful();
 
         if (!$successful) {
             $this->iteration->failing();

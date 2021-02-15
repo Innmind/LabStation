@@ -87,16 +87,12 @@ class MonitorTest extends TestCase
             ->method('__invoke')
             ->with(Path::of('/project'));
         $trigger
-            ->expects($this->at(0))
+            ->expects($this->exactly(2))
             ->method('__invoke')
-            ->with(
-                new Activity(Type::start(), []),
-                $env
+            ->withConsecutive(
+                [new Activity(Type::start(), []), $env],
+                [$activity, $env],
             );
-        $trigger
-            ->expects($this->at(1))
-            ->method('__invoke')
-            ->with($activity);
         $ipc
             ->expects($this->once())
             ->method('listen')
