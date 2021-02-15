@@ -96,22 +96,41 @@ class GraphsTest extends TestCase
             ->method('toString')
             ->willReturn('{"name":"innmind/lab-station"}');
         $processes
-            ->expects($this->at(0))
+            ->expects($this->exactly(4))
             ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "dependency-graph 'depends-on' 'innmind/lab-station' 'innmind'" &&
-                    $command->workingDirectory()->toString() === '/tmp/folder';
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
-        $process
+            ->withConsecutive(
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === "dependency-graph 'depends-on' 'innmind/lab-station' 'innmind'" &&
+                        $command->workingDirectory()->toString() === '/tmp/folder';
+                })],
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === "open 'innmind_lab-station_dependents.svg'" &&
+                        $command->workingDirectory()->toString() === '/tmp/folder';
+                })],
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === "dependency-graph 'of' 'innmind/lab-station'" &&
+                        $command->workingDirectory()->toString() === '/tmp/folder';
+                })],
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === "open 'innmind_lab-station.svg'" &&
+                        $command->workingDirectory()->toString() === '/tmp/folder';
+                })],
+            )
+            ->will($this->onConsecutiveCalls(
+                $process1 = $this->createMock(Process::class),
+                $process2 = $this->createMock(Process::class),
+                $process3 = $this->createMock(Process::class),
+                $process4 = $this->createMock(Process::class),
+            ));
+        $process1
             ->expects($this->once())
             ->method('wait')
             ->will($this->returnSelf());
-        $process
+        $process1
             ->expects($this->once())
             ->method('exitCode')
             ->willReturn(new ExitCode(0));
-        $process
+        $process1
             ->expects($this->once())
             ->method('output')
             ->willReturn($output = $this->createMock(Output::class));
@@ -119,34 +138,18 @@ class GraphsTest extends TestCase
             ->expects($this->once())
             ->method('toString')
             ->willReturn('innmind_lab-station_dependents.svg');
-        $processes
-            ->expects($this->at(1))
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "open 'innmind_lab-station_dependents.svg'" &&
-                    $command->workingDirectory()->toString() === '/tmp/folder';
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
-        $process
+        $process2
             ->expects($this->once())
             ->method('wait');
-        $processes
-            ->expects($this->at(2))
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "dependency-graph 'of' 'innmind/lab-station'" &&
-                    $command->workingDirectory()->toString() === '/tmp/folder';
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
-        $process
+        $process3
             ->expects($this->once())
             ->method('wait')
             ->will($this->returnSelf());
-        $process
+        $process3
             ->expects($this->once())
             ->method('exitCode')
             ->willReturn(new ExitCode(0));
-        $process
+        $process3
             ->expects($this->once())
             ->method('output')
             ->willReturn($output = $this->createMock(Output::class));
@@ -154,15 +157,7 @@ class GraphsTest extends TestCase
             ->expects($this->once())
             ->method('toString')
             ->willReturn('innmind_lab-station.svg');
-        $processes
-            ->expects($this->at(3))
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "open 'innmind_lab-station.svg'" &&
-                    $command->workingDirectory()->toString() === '/tmp/folder';
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
-        $process
+        $process4
             ->expects($this->once())
             ->method('wait');
         $env = $this->createMock(Environment::class);
@@ -226,22 +221,36 @@ class GraphsTest extends TestCase
             ->method('toString')
             ->willReturn('{"name":"innmind/lab-station"}');
         $processes
-            ->expects($this->at(0))
+            ->expects($this->exactly(3))
             ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "dependency-graph 'depends-on' 'innmind/lab-station' 'innmind'" &&
-                    $command->workingDirectory()->toString() === '/tmp/folder';
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
-        $process
+            ->withConsecutive(
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === "dependency-graph 'depends-on' 'innmind/lab-station' 'innmind'" &&
+                        $command->workingDirectory()->toString() === '/tmp/folder';
+                })],
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === "dependency-graph 'of' 'innmind/lab-station'" &&
+                        $command->workingDirectory()->toString() === '/tmp/folder';
+                })],
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === "open 'innmind_lab-station.svg'" &&
+                        $command->workingDirectory()->toString() === '/tmp/folder';
+                })],
+            )
+            ->will($this->onConsecutiveCalls(
+                $process1 = $this->createMock(Process::class),
+                $process2 = $this->createMock(Process::class),
+                $process3 = $this->createMock(Process::class),
+            ));
+        $process1
             ->expects($this->once())
             ->method('wait')
             ->will($this->returnSelf());
-        $process
+        $process1
             ->expects($this->once())
             ->method('exitCode')
             ->willReturn(new ExitCode(1));
-        $process
+        $process1
             ->expects($this->once())
             ->method('output')
             ->willReturn($output = $this->createMock(Output::class));
@@ -288,23 +297,15 @@ class GraphsTest extends TestCase
             ->expects($this->once())
             ->method('write')
             ->with(Str::of('failed to generate graph'));
-        $processes
-            ->expects($this->at(1))
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "dependency-graph 'of' 'innmind/lab-station'" &&
-                    $command->workingDirectory()->toString() === '/tmp/folder';
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
-        $process
+        $process2
             ->expects($this->once())
             ->method('wait')
             ->will($this->returnSelf());
-        $process
+        $process2
             ->expects($this->once())
             ->method('exitCode')
             ->willReturn(new ExitCode(0));
-        $process
+        $process2
             ->expects($this->once())
             ->method('output')
             ->willReturn($output = $this->createMock(Output::class));
@@ -312,15 +313,7 @@ class GraphsTest extends TestCase
             ->expects($this->once())
             ->method('toString')
             ->willReturn('innmind_lab-station.svg');
-        $processes
-            ->expects($this->at(2))
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "open 'innmind_lab-station.svg'" &&
-                    $command->workingDirectory()->toString() === '/tmp/folder';
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
-        $process
+        $process3
             ->expects($this->once())
             ->method('wait');
 
