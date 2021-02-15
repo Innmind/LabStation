@@ -15,7 +15,7 @@
         "issues": "http://github.com/Innmind/LabStation/issues"
     },
     "require": {
-        "php": "~7.4",
+        "php": "~7.4|~8.0",
         "innmind/url": "~3.3",
         "innmind/cli": "~2.0",
         "innmind/operating-system": "~2.0",
