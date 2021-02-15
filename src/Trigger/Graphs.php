@@ -97,7 +97,7 @@ final class Graphs implements Trigger
         $process = $this->processes->execute($command);
         $process->wait();
 
-        if (!$process->exitCode()->isSuccessful()) {
+        if (!$process->exitCode()->successful()) {
             $error->write(Str::of($process->output()->toString()));
 
             return;
