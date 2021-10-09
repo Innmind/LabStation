@@ -14,6 +14,9 @@ final class All implements Trigger
     /** @var list<Trigger> */
     private array $triggers;
 
+    /**
+     * @no-named-arguments
+     */
     public function __construct(Trigger ...$triggers)
     {
         $this->triggers = $triggers;
