@@ -73,10 +73,13 @@ class CodingStandardTest extends TestCase
             ->method('mount')
             ->willReturn($directory = $this->createMock(Adapter::class));
         $directory
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('contains')
-            ->with(new Name('.php_cs.dist'))
-            ->willReturn(false);
+            ->withConsecutive(
+                [new Name('.php_cs.dist')],
+                [new Name('.php-cs-fixer.dist.php')],
+            )
+            ->will($this->onConsecutiveCalls(false, false));
         $processes
             ->expects($this->never())
             ->method('execute');
@@ -106,10 +109,13 @@ class CodingStandardTest extends TestCase
             ->with($workingDirectory)
             ->willReturn($directory = $this->createMock(Adapter::class));
         $directory
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('contains')
-            ->with(new Name('.php_cs.dist'))
-            ->willReturn(true);
+            ->withConsecutive(
+                [new Name('.php_cs.dist')],
+                [new Name('.php_cs.dist')],
+            )
+            ->will($this->onConsecutiveCalls(true, true));
         $processes
             ->expects($this->exactly(2))
             ->method('execute')
@@ -197,10 +203,13 @@ class CodingStandardTest extends TestCase
             ->with($workingDirectory)
             ->willReturn($directory = $this->createMock(Adapter::class));
         $directory
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('contains')
-            ->with(new Name('.php_cs.dist'))
-            ->willReturn(true);
+            ->withConsecutive(
+                [new Name('.php_cs.dist')],
+                [new Name('.php_cs.dist')],
+            )
+            ->will($this->onConsecutiveCalls(true, true));
         $processes
             ->expects($this->exactly(2))
             ->method('execute')
@@ -258,16 +267,114 @@ class CodingStandardTest extends TestCase
             ->with($workingDirectory)
             ->willReturn($directory = $this->createMock(Adapter::class));
         $directory
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('contains')
-            ->with(new Name('.php_cs.dist'))
-            ->willReturn(true);
+            ->withConsecutive(
+                [new Name('.php_cs.dist')],
+                [new Name('.php_cs.dist')],
+            )
+            ->will($this->onConsecutiveCalls(true, true));
         $processes
             ->expects($this->exactly(2))
             ->method('execute')
             ->withConsecutive(
                 [$this->callback(static function($command): bool {
                     return $command->toString() === "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'" &&
+                        $command->workingDirectory()->toString() === '/somewhere';
+                })],
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === "say 'Coding Standard : right'";
+                })],
+            )
+            ->will($this->onConsecutiveCalls(
+                $process = $this->createMock(Process::class),
+                $this->createMock(Process::class),
+            ));
+        $process
+            ->expects($this->once())
+            ->method('output')
+            ->willReturn($output = $this->createMock(Output::class));
+        $output
+            ->expects($this->once())
+            ->method('foreach')
+            ->with($this->callback(static function($listen): bool {
+                $listen(Str::of('some output'), Output\Type::output());
+                $listen(Str::of('some error'), Output\Type::error());
+
+                return true;
+            }));
+        $process
+            ->expects($this->once())
+            ->method('wait');
+        $process
+            ->expects($this->once())
+            ->method('exitCode')
+            ->willReturn(new ExitCode(0));
+        $env = $this->createMock(Environment::class);
+        $env
+            ->expects($this->any())
+            ->method('arguments')
+            ->willReturn(Sequence::strings());
+        $env
+            ->expects($this->any())
+            ->method('workingDirectory')
+            ->willReturn($workingDirectory);
+        $env
+            ->expects($this->any())
+            ->method('output')
+            ->willReturn($output = $this->createMock(Writable::class));
+        $env
+            ->expects($this->once())
+            ->method('error')
+            ->willReturn($error = $this->createMock(Writable::class));
+        $output
+            ->expects($this->exactly(2))
+            ->method('write')
+            ->withConsecutive(
+                [Str::of('some output')],
+                [Str::of("\033[2J\033[H")],
+            );
+        $error
+            ->expects($this->once())
+            ->method('write')
+            ->with(Str::of('some error'));
+
+        $iteration->start();
+        $this->assertNull($trigger(
+            new Activity(Type::testsModified(), []),
+            $env
+        ));
+        $iteration->end($env);
+    }
+
+    public function testTriggerForPHPCSFixer3()
+    {
+        $trigger = new CodingStandard(
+            $processes = $this->createMock(Processes::class),
+            $filesystem = $this->createMock(Filesystem::class),
+            $iteration = new Iteration,
+        );
+        $workingDirectory = Path::of('/somewhere');
+        $filesystem
+            ->expects($this->once())
+            ->method('mount')
+            ->with($workingDirectory)
+            ->willReturn($directory = $this->createMock(Adapter::class));
+        $directory
+            ->expects($this->exactly(3))
+            ->method('contains')
+            ->withConsecutive(
+                [new Name('.php_cs.dist')],
+                [new Name('.php-cs-fixer.dist.php')],
+                [new Name('.php_cs.dist')],
+            )
+            ->will($this->onConsecutiveCalls(false, true, false));
+        $processes
+            ->expects($this->exactly(2))
+            ->method('execute')
+            ->withConsecutive(
+                [$this->callback(static function($command): bool {
+                    return $command->toString() === "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run'" &&
                         $command->workingDirectory()->toString() === '/somewhere';
                 })],
                 [$this->callback(static function($command): bool {
@@ -349,10 +456,13 @@ class CodingStandardTest extends TestCase
             ->with($workingDirectory)
             ->willReturn($directory = $this->createMock(Adapter::class));
         $directory
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('contains')
-            ->with(new Name('.php_cs.dist'))
-            ->willReturn(true);
+            ->withConsecutive(
+                [new Name('.php_cs.dist')],
+                [new Name('.php_cs.dist')],
+            )
+            ->will($this->onConsecutiveCalls(true, true));
         $processes
             ->expects($this->exactly(2))
             ->method('execute')
@@ -425,10 +535,13 @@ class CodingStandardTest extends TestCase
             ->with($workingDirectory)
             ->willReturn($directory = $this->createMock(Adapter::class));
         $directory
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('contains')
-            ->with(new Name('.php_cs.dist'))
-            ->willReturn(true);
+            ->withConsecutive(
+                [new Name('.php_cs.dist')],
+                [new Name('.php_cs.dist')],
+            )
+            ->will($this->onConsecutiveCalls(true, true));
         $processes
             ->expects($this->once())
             ->method('execute')

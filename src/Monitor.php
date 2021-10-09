@@ -23,6 +23,9 @@ final class Monitor
     /** @var list<Agent> */
     private array $agents;
 
+    /**
+     * @no-named-arguments
+     */
     public function __construct(
         Protocol $protocol,
         Manager $manager,

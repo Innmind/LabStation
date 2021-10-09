@@ -8,5 +8,5 @@ use Innmind\IPC\Message;
 interface Protocol
 {
     public function encode(Activity $activity): Message;
-    public function decode(Message $essage): Activity;
+    public function decode(Message $message): Activity;
 }
