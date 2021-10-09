@@ -60,7 +60,7 @@ final class Graphs implements Trigger
         }
 
         $name = $this->load($env);
-        [$vendor, $package] = unwrap($name->split('/'));
+        [$vendor] = unwrap($name->split('/'));
 
         $this->open(
             Command::foreground('dependency-graph')
