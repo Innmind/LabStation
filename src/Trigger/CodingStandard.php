@@ -48,24 +48,27 @@ final class CodingStandard implements Trigger
 
         $directory = $this->filesystem->mount($env->workingDirectory());
 
-        if (!$directory->contains(new Name('.php_cs.dist'))) {
+        if (!$directory->contains(new Name('.php_cs.dist')) && !$directory->contains(new Name('.php-cs-fixer.dist.php'))) {
             return;
         }
 
         $output = $env->output();
         $error = $env->error();
+        $command = Command::foreground('vendor/bin/php-cs-fixer')
+            ->withArgument('fix')
+            ->withOption('diff')
+            ->withOption('dry-run')
+            ->withWorkingDirectory($env->workingDirectory());
+
+        if ($directory->contains(new Name('.php_cs.dist'))) {
+            $command = $command
+                ->withOption('diff-format')
+                ->withArgument('udiff');
+        }
 
         $process = $this
             ->processes
-            ->execute(
-                Command::foreground('vendor/bin/php-cs-fixer')
-                    ->withArgument('fix')
-                    ->withOption('diff')
-                    ->withOption('dry-run')
-                    ->withOption('diff-format')
-                    ->withArgument('udiff')
-                    ->withWorkingDirectory($env->workingDirectory()),
-            );
+            ->execute($command);
         $process
             ->output()
             ->foreach(static function(Str $line, Output\Type $type) use ($output, $error): void {
