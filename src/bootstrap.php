@@ -29,16 +29,6 @@ function bootstrap(OperatingSystem $os): Commands
                 $monitor,
                 $iteration = new Iteration,
                 new Trigger\All(
-                    new Trigger\Graphs(
-                        $os->filesystem(),
-                        $os->control()->processes(),
-                        $os->sockets(),
-                        $os->status()->tmp(),
-                    ),
-                    new Trigger\Profiler(
-                        $os->filesystem(),
-                        $os->control()->processes(),
-                    ),
                     new Trigger\DockerCompose(
                         $os->filesystem(),
                         $os->control()->processes(),
