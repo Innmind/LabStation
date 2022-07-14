@@ -20,7 +20,6 @@
         "innmind/cli": "~2.0",
         "innmind/operating-system": "~2.0",
         "innmind/json": "^1.1",
-        "symfony/dotenv": "~5.0",
         "innmind/ipc": "~3.0",
         "innmind/process-manager": "~3.0"
     },
