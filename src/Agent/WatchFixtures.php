@@ -47,7 +47,7 @@ final class WatchFixtures implements Agent
             $monitor = $this->ipc->get($this->monitor);
             $monitor->send(
                 $this->protocol->encode(
-                    new Activity(Type::fixturesModified(), []),
+                    new Activity(Type::fixturesModified, []),
                 ),
             );
             $monitor->close();

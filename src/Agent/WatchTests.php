@@ -43,7 +43,7 @@ final class WatchTests implements Agent
             $monitor = $this->ipc->get($this->monitor);
             $monitor->send(
                 $this->protocol->encode(
-                    new Activity(Type::testsModified(), []),
+                    new Activity(Type::testsModified, []),
                 ),
             );
             $monitor->close();

@@ -14,11 +14,10 @@ class ActivityTest extends TestCase
     public function testInterface()
     {
         $activity = new Activity(
-            $type = Type::sourcesModified(),
+            $type = Type::sourcesModified,
             ['foo' => 'bar'],
         );
 
-        $this->assertTrue($activity->is(Type::sourcesModified()));
         $this->assertSame($type, $activity->type());
         $this->assertSame(['foo' => 'bar'], $activity->data());
     }

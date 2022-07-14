@@ -48,7 +48,7 @@ class WatchPropertiesTest extends TestCase
         $protocol
             ->expects($this->once())
             ->method('encode')
-            ->with(new Activity(Type::propertiesModified(), []))
+            ->with(new Activity(Type::propertiesModified, []))
             ->willReturn($message = $this->createMock(Message::class));
         $ipc
             ->expects($this->once())

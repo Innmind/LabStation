@@ -52,7 +52,7 @@ class TestsTest extends TestCase
             ->method('execute');
 
         $this->assertNull($trigger(
-            new Activity(Type::start(), []),
+            new Activity(Type::start, []),
             $this->createMock(Environment::class),
         ));
     }
@@ -61,10 +61,10 @@ class TestsTest extends TestCase
     {
         $this
             ->forAll(Set\Elements::of(
-                Type::sourcesModified(),
-                Type::testsModified(),
-                Type::fixturesModified(),
-                Type::propertiesModified(),
+                Type::sourcesModified,
+                Type::testsModified,
+                Type::fixturesModified,
+                Type::propertiesModified,
             ))
             ->then(function($type) {
                 $trigger = new Tests(
@@ -194,7 +194,7 @@ class TestsTest extends TestCase
 
         $iteration->start();
         $this->assertNull($trigger(
-            new Activity(Type::sourcesModified(), []),
+            new Activity(Type::sourcesModified, []),
             $env,
         ));
         $iteration->end($env);
@@ -259,7 +259,7 @@ class TestsTest extends TestCase
 
         $iteration->start();
         $this->assertNull($trigger(
-            new Activity(Type::sourcesModified(), []),
+            new Activity(Type::sourcesModified, []),
             $env,
         ));
         $iteration->end($env);
@@ -302,7 +302,7 @@ class TestsTest extends TestCase
 
         $iteration->start();
         $this->assertNull($trigger(
-            new Activity(Type::sourcesModified(), []),
+            new Activity(Type::sourcesModified, []),
             $env,
         ));
         $iteration->end($env);

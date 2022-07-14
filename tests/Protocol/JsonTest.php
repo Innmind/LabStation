@@ -26,7 +26,7 @@ class JsonTest extends TestCase
     {
         $json = new Json;
 
-        $message = $json->encode(new Activity(Type::sourcesModified(), ['foo' => 'bar']));
+        $message = $json->encode(new Activity(Type::sourcesModified, ['foo' => 'bar']));
 
         $this->assertInstanceOf(Message::class, $message);
         $this->assertSame('application/json', $message->mediaType()->toString());
@@ -55,7 +55,7 @@ class JsonTest extends TestCase
         ));
 
         $this->assertInstanceOf(Activity::class, $activity);
-        $this->assertTrue($activity->is(Type::sourcesModified()));
+        $this->assertSame(Type::sourcesModified, $activity->type());
         $this->assertSame(['foo' => 'bar'], $activity->data());
     }
 }

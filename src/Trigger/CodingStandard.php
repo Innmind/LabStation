@@ -37,15 +37,17 @@ final class CodingStandard implements Trigger
 
     public function __invoke(Activity $activity, Environment $env): void
     {
-        if (
-            !$activity->is(Type::sourcesModified()) &&
-            !$activity->is(Type::testsModified()) &&
-            !$activity->is(Type::fixturesModified()) &&
-            !$activity->is(Type::propertiesModified())
-        ) {
-            return;
-        }
+        $_ = match ($activity->type()) {
+            Type::sourcesModified => $this->run($env),
+            Type::testsModified => $this->run($env),
+            Type::fixturesModified => $this->run($env),
+            Type::propertiesModified => $this->run($env),
+            default => null,
+        };
+    }
 
+    private function run(Environment $env): void
+    {
         $directory = $this->filesystem->mount($env->workingDirectory());
 
         if (!$directory->contains(new Name('.php_cs.dist')) && !$directory->contains(new Name('.php-cs-fixer.dist.php'))) {

@@ -29,10 +29,14 @@ final class DockerCompose implements Trigger
 
     public function __invoke(Activity $activity, Environment $env): void
     {
-        if (!$activity->is(Type::start())) {
-            return;
-        }
+        $_ = match ($activity->type()) {
+            Type::start => $this->run($env),
+            default => null,
+        };
+    }
 
+    private function run(Environment $env): void
+    {
         $project = $this->filesystem->mount($env->workingDirectory());
 
         if (!$project->contains(new Name('docker-compose.yml'))) {

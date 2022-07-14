@@ -16,11 +16,6 @@ final class Activity
         $this->data = $data;
     }
 
-    public function is(Type $type): bool
-    {
-        return $this->type->equals($type);
-    }
-
     public function type(): Type
     {
         return $this->type;
