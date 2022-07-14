@@ -51,7 +51,7 @@ class ComposerUpdateTest extends TestCase
             ->method('execute');
 
         $this->assertNull($trigger(
-            new Activity(Type::sourcesModified, []),
+            new Activity(Type::sourcesModified),
             $this->createMock(Environment::class),
         ));
     }
@@ -124,7 +124,7 @@ class ComposerUpdateTest extends TestCase
             ->with(Str::of('some error'));
 
         $this->assertNull($trigger(
-            new Activity(Type::start, []),
+            new Activity(Type::start),
             $env,
         ));
     }
@@ -163,7 +163,7 @@ class ComposerUpdateTest extends TestCase
             ->with(Str::of('Update dependencies? [Y/n] '));
 
         $this->assertNull($trigger(
-            new Activity(Type::start, []),
+            new Activity(Type::start),
             $env,
         ));
     }

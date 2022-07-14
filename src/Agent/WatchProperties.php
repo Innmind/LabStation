@@ -47,7 +47,7 @@ final class WatchProperties implements Agent
             $monitor = $this->ipc->get($this->monitor);
             $monitor->send(
                 $this->protocol->encode(
-                    new Activity(Type::propertiesModified, []),
+                    new Activity(Type::propertiesModified),
                 ),
             );
             $monitor->close();

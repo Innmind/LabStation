@@ -56,7 +56,7 @@ final class Monitor
         }
 
         $agents = $agents();
-        ($this->trigger)(new Activity(Type::start, []), $env);
+        ($this->trigger)(new Activity(Type::start), $env);
 
         $this->ipc->listen($this->name)(function(Message $message) use ($env): void {
             $activity = $this->protocol->decode($message);

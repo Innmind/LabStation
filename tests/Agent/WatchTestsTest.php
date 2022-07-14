@@ -48,7 +48,7 @@ class WatchTestsTest extends TestCase
         $protocol
             ->expects($this->once())
             ->method('encode')
-            ->with(new Activity(Type::testsModified, []))
+            ->with(new Activity(Type::testsModified))
             ->willReturn($message = $this->createMock(Message::class));
         $ipc
             ->expects($this->once())

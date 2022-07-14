@@ -52,7 +52,7 @@ class MonitorTest extends TestCase
             ->expects($this->once())
             ->method('decode')
             ->with($message)
-            ->willReturn($activity = new Activity(Type::sourcesModified, []));
+            ->willReturn($activity = new Activity(Type::sourcesModified));
         $manager
             ->expects($this->once())
             ->method('schedule')
@@ -90,7 +90,7 @@ class MonitorTest extends TestCase
             ->expects($this->exactly(2))
             ->method('__invoke')
             ->withConsecutive(
-                [new Activity(Type::start, []), $env],
+                [new Activity(Type::start), $env],
                 [$activity, $env],
             );
         $ipc

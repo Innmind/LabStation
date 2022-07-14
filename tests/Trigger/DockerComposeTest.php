@@ -46,7 +46,7 @@ class DockerComposeTest extends TestCase
             ->method('execute');
 
         $this->assertNull($trigger(
-            new Activity(Type::sourcesModified, []),
+            new Activity(Type::sourcesModified),
             $this->createMock(Environment::class),
         ));
     }
@@ -77,7 +77,7 @@ class DockerComposeTest extends TestCase
             ->method('execute');
 
         $this->assertNull($trigger(
-            new Activity(Type::start, []),
+            new Activity(Type::start),
             $env,
         ));
     }
@@ -112,7 +112,7 @@ class DockerComposeTest extends TestCase
             }));
 
         $this->assertNull($trigger(
-            new Activity(Type::start, []),
+            new Activity(Type::start),
             $env,
         ));
     }
