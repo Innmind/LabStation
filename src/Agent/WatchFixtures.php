@@ -27,7 +27,7 @@ final class WatchFixtures implements Agent
         Protocol $protocol,
         Filesystem $filesystem,
         IPC $ipc,
-        Name $monitor
+        Name $monitor,
     ) {
         $this->protocol = $protocol;
         $this->filesystem = $filesystem;

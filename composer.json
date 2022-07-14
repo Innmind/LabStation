@@ -15,7 +15,7 @@
         "issues": "http://github.com/Innmind/LabStation/issues"
     },
     "require": {
-        "php": "~7.4|~8.0",
+        "php": "~8.1",
         "innmind/url": "~3.3",
         "innmind/cli": "~2.0",
         "innmind/operating-system": "~2.0",
@@ -38,7 +38,7 @@
         "phpunit/phpunit": "~9.0",
         "vimeo/psalm": "^4.1",
         "innmind/black-box": "^4.9",
-        "innmind/coding-standard": "^1.0"
+        "innmind/coding-standard": "~2.0"
     },
     "bin": ["lab-station"]
 }

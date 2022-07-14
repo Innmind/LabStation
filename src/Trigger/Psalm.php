@@ -28,7 +28,7 @@ final class Psalm implements Trigger
     public function __construct(
         Processes $processes,
         Filesystem $filesystem,
-        Iteration $iteration
+        Iteration $iteration,
     ) {
         $this->processes = $processes;
         $this->filesystem = $filesystem;
@@ -86,7 +86,7 @@ final class Psalm implements Trigger
             ->processes
             ->execute(
                 Command::foreground('say')
-                    ->withArgument($text)
+                    ->withArgument($text),
             )
             ->wait();
     }

@@ -24,7 +24,7 @@ class AllTest extends TestCase
         $trigger = new All(
             $trigger1 = $this->createMock(Trigger::class),
             $trigger2 = $this->createMock(Trigger::class),
-            $trigger3 = $this->createMock(Trigger::class)
+            $trigger3 = $this->createMock(Trigger::class),
         );
         $activity = new Activity(Type::start(), []);
         $env = $this->createMock(Environment::class);

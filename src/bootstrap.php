@@ -47,7 +47,7 @@ function bootstrap(OperatingSystem $os): Commands
                     new Trigger\ComposerUpdate(
                         $os->control()->processes(),
                         $os->sockets(),
-                    )
+                    ),
                 ),
                 new Agent\WatchSources(
                     $protocol,

@@ -36,7 +36,7 @@ class MonitorTest extends TestCase
             new Iteration,
             $trigger = $this->createMock(Trigger::class),
             $agent1 = $this->createMock(Agent::class),
-            $agent2 = $this->createMock(Agent::class)
+            $agent2 = $this->createMock(Agent::class),
         );
         $message = $this->createMock(Message::class);
         $env = $this->createMock(Environment::class);

@@ -31,8 +31,8 @@ class WatchTestsTest extends TestCase
                 $this->createMock(Protocol::class),
                 $this->createMock(Filesystem::class),
                 $this->createMock(IPC::class),
-                new Name('foo')
-            )
+                new Name('foo'),
+            ),
         );
     }
 
@@ -42,7 +42,7 @@ class WatchTestsTest extends TestCase
             $protocol = $this->createMock(Protocol::class),
             $filesystem = $this->createMock(Filesystem::class),
             $ipc = $this->createMock(IPC::class),
-            $name = new Name('foo')
+            $name = new Name('foo'),
         );
         $project = Path::of('/vendor/package/');
         $protocol

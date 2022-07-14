@@ -43,7 +43,7 @@ class JsonTest extends TestCase
 
         (new Json)->decode(new Message\Generic(
             new MediaType('text', 'plain'),
-            Str::of('foobar')
+            Str::of('foobar'),
         ));
     }
 
@@ -51,7 +51,7 @@ class JsonTest extends TestCase
     {
         $activity = (new Json)->decode(new Message\Generic(
             new MediaType('application', 'json'),
-            Str::of('{"type":"sourcesModified","data":{"foo":"bar"}}')
+            Str::of('{"type":"sourcesModified","data":{"foo":"bar"}}'),
         ));
 
         $this->assertInstanceOf(Activity::class, $activity);

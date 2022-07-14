@@ -40,7 +40,7 @@ class CodingStandardTest extends TestCase
                 $this->createMock(Processes::class),
                 $this->createMock(Filesystem::class),
                 new Iteration,
-            )
+            ),
         );
     }
 
@@ -57,7 +57,7 @@ class CodingStandardTest extends TestCase
 
         $this->assertNull($trigger(
             new Activity(Type::start(), []),
-            $this->createMock(Environment::class)
+            $this->createMock(Environment::class),
         ));
     }
 
@@ -184,7 +184,7 @@ class CodingStandardTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $env
+            $env,
         ));
         $iteration->end($env);
     }
@@ -248,7 +248,7 @@ class CodingStandardTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $env
+            $env,
         ));
         $iteration->end($env);
     }
@@ -342,7 +342,7 @@ class CodingStandardTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::testsModified(), []),
-            $env
+            $env,
         ));
         $iteration->end($env);
     }
@@ -437,7 +437,7 @@ class CodingStandardTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::testsModified(), []),
-            $env
+            $env,
         ));
         $iteration->end($env);
     }
@@ -516,7 +516,7 @@ class CodingStandardTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $env
+            $env,
         ));
         $iteration->end($env);
     }
@@ -574,7 +574,7 @@ class CodingStandardTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $env
+            $env,
         ));
         $iteration->end($env);
     }

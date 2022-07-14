@@ -36,7 +36,7 @@ class ComposerUpdateTest extends TestCase
             new ComposerUpdate(
                 $this->createMock(Processes::class),
                 $this->createMock(Sockets::class),
-            )
+            ),
         );
     }
 
@@ -52,7 +52,7 @@ class ComposerUpdateTest extends TestCase
 
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $this->createMock(Environment::class)
+            $this->createMock(Environment::class),
         ));
     }
 
@@ -125,7 +125,7 @@ class ComposerUpdateTest extends TestCase
 
         $this->assertNull($trigger(
             new Activity(Type::start(), []),
-            $env
+            $env,
         ));
     }
 
@@ -164,7 +164,7 @@ class ComposerUpdateTest extends TestCase
 
         $this->assertNull($trigger(
             new Activity(Type::start(), []),
-            $env
+            $env,
         ));
     }
 }

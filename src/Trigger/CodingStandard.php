@@ -28,7 +28,7 @@ final class CodingStandard implements Trigger
     public function __construct(
         Processes $processes,
         Filesystem $filesystem,
-        Iteration $iteration
+        Iteration $iteration,
     ) {
         $this->processes = $processes;
         $this->filesystem = $filesystem;
@@ -96,7 +96,7 @@ final class CodingStandard implements Trigger
             ->processes
             ->execute(
                 Command::foreground('say')
-                    ->withArgument($text)
+                    ->withArgument($text),
             )
             ->wait();
     }

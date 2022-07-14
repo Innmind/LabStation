@@ -37,9 +37,9 @@ class WorkTest extends TestCase
                     $this->createMock(IPC::class),
                     new Name('foo'),
                     new Iteration,
-                    $this->createMock(Trigger::class)
-                )
-            )
+                    $this->createMock(Trigger::class),
+                ),
+            ),
         );
     }
 
@@ -54,9 +54,9 @@ class WorkTest extends TestCase
                     $this->createMock(IPC::class),
                     new Name('foo'),
                     new Iteration,
-                    $this->createMock(Trigger::class)
-                )
-            ))->toString()
+                    $this->createMock(Trigger::class),
+                ),
+            ))->toString(),
         );
     }
 
@@ -69,8 +69,8 @@ class WorkTest extends TestCase
                 $ipc = $this->createMock(IPC::class),
                 new Name('foo'),
                 new Iteration,
-                $this->createMock(Trigger::class)
-            )
+                $this->createMock(Trigger::class),
+            ),
         );
         $ipc
             ->expects($this->once())
@@ -84,7 +84,7 @@ class WorkTest extends TestCase
         $this->assertNull($command(
             $env,
             new Arguments,
-            new Options
+            new Options,
         ));
     }
 }

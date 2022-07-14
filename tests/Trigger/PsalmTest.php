@@ -40,7 +40,7 @@ class PsalmTest extends TestCase
                 $this->createMock(Processes::class),
                 $this->createMock(Filesystem::class),
                 new Iteration,
-            )
+            ),
         );
     }
 
@@ -57,7 +57,7 @@ class PsalmTest extends TestCase
 
         $this->assertNull($trigger(
             new Activity(Type::start(), []),
-            $this->createMock(Environment::class)
+            $this->createMock(Environment::class),
         ));
     }
 
@@ -178,7 +178,7 @@ class PsalmTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $env
+            $env,
         ));
         $iteration->end($env);
     }
@@ -241,7 +241,7 @@ class PsalmTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $env
+            $env,
         ));
         $iteration->end($env);
     }
@@ -332,7 +332,7 @@ class PsalmTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::testsModified(), []),
-            $env
+            $env,
         ));
         $iteration->end($env);
     }
@@ -408,7 +408,7 @@ class PsalmTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $env
+            $env,
         ));
         $iteration->end($env);
     }
@@ -463,7 +463,7 @@ class PsalmTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $env
+            $env,
         ));
         $iteration->end($env);
     }

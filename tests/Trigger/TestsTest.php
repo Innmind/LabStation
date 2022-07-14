@@ -37,7 +37,7 @@ class TestsTest extends TestCase
     {
         $this->assertInstanceOf(
             Trigger::class,
-            new Tests($this->createMock(Processes::class), new Iteration)
+            new Tests($this->createMock(Processes::class), new Iteration),
         );
     }
 
@@ -53,7 +53,7 @@ class TestsTest extends TestCase
 
         $this->assertNull($trigger(
             new Activity(Type::start(), []),
-            $this->createMock(Environment::class)
+            $this->createMock(Environment::class),
         ));
     }
 
@@ -140,7 +140,7 @@ class TestsTest extends TestCase
                 $iteration->start();
                 $this->assertNull($trigger(
                     new Activity($type, []),
-                    $env
+                    $env,
                 ));
                 $iteration->end($env);
             });
@@ -195,7 +195,7 @@ class TestsTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $env
+            $env,
         ));
         $iteration->end($env);
     }
@@ -260,7 +260,7 @@ class TestsTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $env
+            $env,
         ));
         $iteration->end($env);
     }
@@ -303,7 +303,7 @@ class TestsTest extends TestCase
         $iteration->start();
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $env
+            $env,
         ));
         $iteration->end($env);
     }

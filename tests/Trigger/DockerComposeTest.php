@@ -27,8 +27,8 @@ class DockerComposeTest extends TestCase
             Trigger::class,
             new DockerCompose(
                 $this->createMock(Filesystem::class),
-                $this->createMock(Processes::class)
-            )
+                $this->createMock(Processes::class),
+            ),
         );
     }
 
@@ -36,7 +36,7 @@ class DockerComposeTest extends TestCase
     {
         $trigger = new DockerCompose(
             $filesystem = $this->createMock(Filesystem::class),
-            $processes = $this->createMock(Processes::class)
+            $processes = $this->createMock(Processes::class),
         );
         $filesystem
             ->expects($this->never())
@@ -47,7 +47,7 @@ class DockerComposeTest extends TestCase
 
         $this->assertNull($trigger(
             new Activity(Type::sourcesModified(), []),
-            $this->createMock(Environment::class)
+            $this->createMock(Environment::class),
         ));
     }
 
@@ -55,7 +55,7 @@ class DockerComposeTest extends TestCase
     {
         $trigger = new DockerCompose(
             $filesystem = $this->createMock(Filesystem::class),
-            $processes = $this->createMock(Processes::class)
+            $processes = $this->createMock(Processes::class),
         );
         $env = $this->createMock(Environment::class);
         $env
@@ -78,7 +78,7 @@ class DockerComposeTest extends TestCase
 
         $this->assertNull($trigger(
             new Activity(Type::start(), []),
-            $env
+            $env,
         ));
     }
 
@@ -86,7 +86,7 @@ class DockerComposeTest extends TestCase
     {
         $trigger = new DockerCompose(
             $filesystem = $this->createMock(Filesystem::class),
-            $processes = $this->createMock(Processes::class)
+            $processes = $this->createMock(Processes::class),
         );
         $env = $this->createMock(Environment::class);
         $env
@@ -113,7 +113,7 @@ class DockerComposeTest extends TestCase
 
         $this->assertNull($trigger(
             new Activity(Type::start(), []),
-            $env
+            $env,
         ));
     }
 }

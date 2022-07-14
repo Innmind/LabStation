@@ -15,7 +15,7 @@ class ActivityTest extends TestCase
     {
         $activity = new Activity(
             $type = Type::sourcesModified(),
-            ['foo' => 'bar']
+            ['foo' => 'bar'],
         );
 
         $this->assertTrue($activity->is(Type::sourcesModified()));
