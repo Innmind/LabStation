@@ -4,13 +4,21 @@ declare(strict_types = 1);
 namespace Innmind\LabStation;
 
 use Innmind\LabStation\Activity\Type;
-use Innmind\ProcessManager\Manager;
+use Innmind\ProcessManager\{
+    Manager,
+    Running,
+    Process\Unkillable,
+};
 use Innmind\IPC\{
     IPC,
     Message,
     Process\Name,
 };
 use Innmind\CLI\Console;
+use Innmind\Immutable\{
+    Maybe,
+    Str,
+};
 
 final class Monitor
 {
@@ -55,15 +63,31 @@ final class Monitor
             });
         }
 
-        $agents = $manager->start()->match(
-            static fn($agents) => $agents,
-            static fn() => throw new \RuntimeException('Unable to start the agents'),
-        );
+        return $manager
+            ->start()
+            ->maybe()
+            ->flatMap(fn($agents) => $this->start($agents, $console))
+            ->match(
+                static fn($console) => $console
+                    ->error(Str::of("Crashed\n"))
+                    ->exit(1),
+                static fn() => $console
+                    ->error(Str::of("Unable to start the agents\n"))
+                    ->exit(1),
+            );
+    }
+
+    /**
+     * @return Maybe<Console>
+     */
+    private function start(Running $agents, Console $console): Maybe
+    {
         $console = ($this->trigger)(new Activity(Type::start), $console);
 
         $server = $this->ipc->listen($this->name);
+
         /** @psalm-suppress InvalidArgument */
-        $console = $server(
+        return $server(
             $console,
             function($message, $continuation, Console $console) {
                 $activity = $this->protocol->decode($message);
@@ -73,13 +97,12 @@ final class Monitor
 
                 return $continuation->continue($console);
             },
-        )->match(
-            static fn(Console $console) => $console,
-            static fn() => throw new \RuntimeException('Crash'),
-        );
-
-        $agents->kill();
-
-        return $console;
+        )
+            ->flatMap(
+                static fn(Console $console) => $agents
+                    ->kill()
+                    ->map(static fn() => $console),
+            )
+            ->maybe();
     }
 }
