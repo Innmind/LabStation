@@ -10,6 +10,7 @@ use Innmind\LabStation\{
     Activity\Type,
     Iteration,
 };
+use Innmind\OperatingSystem\Filesystem;
 use Innmind\Server\Control\Server\{
     Processes,
     Process,
@@ -21,6 +22,11 @@ use Innmind\CLI\{
     Console,
     Command\Arguments,
     Command\Options,
+};
+use Innmind\Filesystem\{
+    Adapter,
+    File\File,
+    File\Content,
 };
 use Innmind\Immutable\{
     Sequence,
@@ -43,13 +49,18 @@ class TestsTest extends TestCase
     {
         $this->assertInstanceOf(
             Trigger::class,
-            new Tests($this->createMock(Processes::class), new Iteration),
+            new Tests(
+                $this->createMock(Filesystem::class),
+                $this->createMock(Processes::class),
+                new Iteration,
+            ),
         );
     }
 
     public function testDoNothingWhenNotOfExpectedType()
     {
         $trigger = new Tests(
+            $this->createMock(Filesystem::class),
             $processes = $this->createMock(Processes::class),
             new Iteration,
         );
@@ -79,9 +90,19 @@ class TestsTest extends TestCase
             ))
             ->then(function($type) {
                 $trigger = new Tests(
+                    $filesystem = $this->createMock(Filesystem::class),
                     $processes = $this->createMock(Processes::class),
                     $iteration = new Iteration,
                 );
+                $adapter = Adapter\InMemory::new();
+                $adapter->add(File::named(
+                    'phpunit.xml.dist',
+                    Content\None::of(),
+                ));
+                $filesystem
+                    ->expects($this->once())
+                    ->method('mount')
+                    ->willReturn($adapter);
                 $processes
                     ->expects($this->exactly(2))
                     ->method('execute')
@@ -148,12 +169,74 @@ class TestsTest extends TestCase
             });
     }
 
+    public function testDoesntTriggerWhenNoPHPUnitFile()
+    {
+        $this
+            ->forAll(Set\Elements::of(
+                Type::sourcesModified,
+                Type::testsModified,
+                Type::fixturesModified,
+                Type::propertiesModified,
+            ))
+            ->then(function($type) {
+                $trigger = new Tests(
+                    $filesystem = $this->createMock(Filesystem::class),
+                    $processes = $this->createMock(Processes::class),
+                    $iteration = new Iteration,
+                );
+                $adapter = Adapter\InMemory::new();
+                $filesystem
+                    ->expects($this->once())
+                    ->method('mount')
+                    ->willReturn($adapter);
+                $processes
+                    ->expects($this->never())
+                    ->method('execute');
+                $console = Console::of(
+                    Environment\InMemory::of(
+                        [],
+                        true,
+                        [],
+                        [],
+                        '/somewhere',
+                    ),
+                    new Arguments,
+                    new Options,
+                );
+
+                $iteration->start();
+                $console = $trigger(
+                    new Activity($type),
+                    $console,
+                );
+                $console = $iteration->end($console);
+                $this->assertSame(
+                    ["\033[2J\033[H"],
+                    $console->environment()->outputs(),
+                );
+                $this->assertSame(
+                    [],
+                    $console->environment()->errors(),
+                );
+            });
+    }
+
     public function testDoesntClearTerminalOnSuccessfullTestWhenSpecifiedOptionProvided()
     {
         $trigger = new Tests(
+            $filesystem = $this->createMock(Filesystem::class),
             $processes = $this->createMock(Processes::class),
             $iteration = new Iteration,
         );
+        $adapter = Adapter\InMemory::new();
+        $adapter->add(File::named(
+            'phpunit.xml.dist',
+            Content\None::of(),
+        ));
+        $filesystem
+            ->expects($this->once())
+            ->method('mount')
+            ->willReturn($adapter);
         $processes
             ->expects($this->exactly(2))
             ->method('execute')
@@ -209,9 +292,19 @@ class TestsTest extends TestCase
     public function testSaidMessageIsChangedWhenTestsAreFailing()
     {
         $trigger = new Tests(
+            $filesystem = $this->createMock(Filesystem::class),
             $processes = $this->createMock(Processes::class),
             $iteration = new Iteration,
         );
+        $adapter = Adapter\InMemory::new();
+        $adapter->add(File::named(
+            'phpunit.xml.dist',
+            Content\None::of(),
+        ));
+        $filesystem
+            ->expects($this->once())
+            ->method('mount')
+            ->willReturn($adapter);
         $processes
             ->expects($this->exactly(2))
             ->method('execute')
@@ -267,9 +360,19 @@ class TestsTest extends TestCase
     public function testNoMessageIsSpokenWhenUsingTheSilentOption()
     {
         $trigger = new Tests(
+            $filesystem = $this->createMock(Filesystem::class),
             $processes = $this->createMock(Processes::class),
             $iteration = new Iteration,
         );
+        $adapter = Adapter\InMemory::new();
+        $adapter->add(File::named(
+            'phpunit.xml.dist',
+            Content\None::of(),
+        ));
+        $filesystem
+            ->expects($this->once())
+            ->method('mount')
+            ->willReturn($adapter);
         $processes
             ->expects($this->once())
             ->method('execute')

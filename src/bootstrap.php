@@ -36,7 +36,11 @@ function bootstrap(OperatingSystem $os): Commands
                         $os->filesystem(),
                         $os->control()->processes(),
                     ),
-                    new Trigger\Tests($os->control()->processes(), $iteration),
+                    new Trigger\Tests(
+                        $os->filesystem(),
+                        $os->control()->processes(),
+                        $iteration,
+                    ),
                     new Trigger\Psalm(
                         $os->control()->processes(),
                         $os->filesystem(),

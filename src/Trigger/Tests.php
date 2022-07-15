@@ -9,21 +9,28 @@ use Innmind\LabStation\{
     Activity\Type,
     Iteration,
 };
+use Innmind\OperatingSystem\Filesystem;
 use Innmind\CLI\Console;
 use Innmind\Server\Control\Server\{
     Processes,
     Command,
     Process\Output,
 };
+use Innmind\Filesystem\Name;
 use Innmind\Immutable\Map;
 
 final class Tests implements Trigger
 {
+    private Filesystem $filesystem;
     private Processes $processes;
     private Iteration $iteration;
 
-    public function __construct(Processes $processes, Iteration $iteration)
-    {
+    public function __construct(
+        Filesystem $filesystem,
+        Processes $processes,
+        Iteration $iteration,
+    ) {
+        $this->filesystem = $filesystem;
         $this->processes = $processes;
         $this->iteration = $iteration;
     }
@@ -31,12 +38,24 @@ final class Tests implements Trigger
     public function __invoke(Activity $activity, Console $console): Console
     {
         return match ($activity->type()) {
-            Type::sourcesModified => $this->run($console),
-            Type::testsModified => $this->run($console),
-            Type::fixturesModified => $this->run($console),
-            Type::propertiesModified => $this->run($console),
+            Type::sourcesModified => $this->attempt($console),
+            Type::testsModified => $this->attempt($console),
+            Type::fixturesModified => $this->attempt($console),
+            Type::propertiesModified => $this->attempt($console),
             default => $console,
         };
+    }
+
+    private function attempt(Console $console): Console
+    {
+        return $this
+            ->filesystem
+            ->mount($console->workingDirectory())
+            ->get(new Name('phpunit.xml.dist'))
+            ->match(
+                fn() => $this->run($console),
+                static fn() => $console,
+            );
     }
 
     private function run(Console $console): Console
