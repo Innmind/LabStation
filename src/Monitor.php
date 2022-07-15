@@ -69,7 +69,7 @@ final class Monitor
             ->flatMap(fn($agents) => $this->start($agents, $console))
             ->match(
                 static fn($console) => $console
-                    ->error(Str::of("Crashed\n"))
+                    ->error(Str::of("Terminated\n"))
                     ->exit(1),
                 static fn() => $console
                     ->error(Str::of("Unable to start the agents\n"))

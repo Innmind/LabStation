@@ -113,7 +113,6 @@ class WorkTest extends TestCase
             ->will($this->returnArgument(1));
 
         $console = $command($console);
-        // It says it crashed because it's never supposed to terminate
-        $this->assertSame(["Crashed\n"], $console->environment()->errors());
+        $this->assertSame(["Terminated\n"], $console->environment()->errors());
     }
 }
