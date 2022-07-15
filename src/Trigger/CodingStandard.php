@@ -38,22 +38,29 @@ final class CodingStandard implements Trigger
     public function __invoke(Activity $activity, Console $console): Console
     {
         return match ($activity->type()) {
-            Type::sourcesModified => $this->run($console),
-            Type::testsModified => $this->run($console),
-            Type::fixturesModified => $this->run($console),
-            Type::propertiesModified => $this->run($console),
+            Type::sourcesModified => $this->attempt($console),
+            Type::testsModified => $this->attempt($console),
+            Type::fixturesModified => $this->attempt($console),
+            Type::propertiesModified => $this->attempt($console),
             default => $console,
         };
     }
 
-    private function run(Console $console): Console
+    private function attempt(Console $console): Console
     {
         $directory = $this->filesystem->mount($console->workingDirectory());
 
-        if (!$directory->contains(new Name('.php_cs.dist')) && !$directory->contains(new Name('.php-cs-fixer.dist.php'))) {
-            return $console;
-        }
+        return $directory
+            ->get(new Name('.php_cs.dist'))
+            ->otherwise(static fn() => $directory->get(new Name('.php-cs-fixer.dist.php')))
+            ->match(
+                fn($file) => $this->run($console, $file->name()),
+                static fn() => $console,
+            );
+    }
 
+    private function run(Console $console, Name $file): Console
+    {
         /** @var Map<non-empty-string, string> */
         $variables = $console
             ->variables()
@@ -66,7 +73,7 @@ final class CodingStandard implements Trigger
             ->withWorkingDirectory($console->workingDirectory())
             ->withEnvironments($variables);
 
-        if ($directory->contains(new Name('.php_cs.dist'))) {
+        if ($file->toString() === '.php_cs.dist') {
             $command = $command
                 ->withOption('diff-format')
                 ->withArgument('udiff');
@@ -97,17 +104,20 @@ final class CodingStandard implements Trigger
             return $console;
         }
 
-        $text = 'Coding Standard : ';
-        $text .= $successful ? 'right' : 'wrong';
-
-        $this
+        return $this
             ->processes
             ->execute(
-                Command::foreground('say')
-                    ->withArgument($text),
+                Command::foreground('say')->withArgument(
+                    'Coding Standard : '. match ($successful) {
+                        true => 'right',
+                        false => 'wrong',
+                    },
+                ),
             )
-            ->wait();
-
-        return $console;
+            ->wait()
+            ->match(
+                static fn() => $console,
+                static fn() => $console,
+            );
     }
 }

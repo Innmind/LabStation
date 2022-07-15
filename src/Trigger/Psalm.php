@@ -38,20 +38,26 @@ final class Psalm implements Trigger
     public function __invoke(Activity $activity, Console $console): Console
     {
         return match ($activity->type()) {
-            Type::sourcesModified => $this->run($console),
-            Type::testsModified => $this->run($console),
+            Type::sourcesModified => $this->ettempt($console),
+            Type::testsModified => $this->ettempt($console),
             default => $console,
         };
     }
 
+    private function ettempt(Console $console): Console
+    {
+        return $this
+            ->filesystem
+            ->mount($console->workingDirectory())
+            ->get(new Name('psalm.xml'))
+            ->match(
+                fn() => $this->run($console),
+                static fn() => $console,
+            );
+    }
+
     private function run(Console $console): Console
     {
-        $directory = $this->filesystem->mount($console->workingDirectory());
-
-        if (!$directory->contains(new Name('psalm.xml'))) {
-            return $console;
-        }
-
         /** @var Map<non-empty-string, string> */
         $variables = $console->variables()->filter(
             static fn($key) => \in_array($key, ['HOME', 'USER', 'PATH'], true),
@@ -87,17 +93,20 @@ final class Psalm implements Trigger
             return $console;
         }
 
-        $text = 'Psalm : ';
-        $text .= $successful ? 'ok' : 'failing';
-
-        $this
+        return $this
             ->processes
             ->execute(
-                Command::foreground('say')
-                    ->withArgument($text),
+                Command::foreground('say')->withArgument(
+                    'Psalm : '. match ($successful) {
+                        true  => 'ok',
+                        false => 'failing',
+                    },
+                ),
             )
-            ->wait();
-
-        return $console;
+            ->wait()
+            ->match(
+                static fn() => $console,
+                static fn() => $console,
+            );
     }
 }

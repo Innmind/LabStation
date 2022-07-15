@@ -77,17 +77,20 @@ final class Tests implements Trigger
             return $console;
         }
 
-        $text = 'PHPUnit : ';
-        $text .= $successful ? 'ok' : 'failing';
-
-        $this
+        return $this
             ->processes
             ->execute(
-                Command::foreground('say')
-                    ->withArgument($text),
+                Command::foreground('say')->withArgument(
+                    'PHPUnit : '. match ($successful) {
+                        true => 'ok',
+                        false => 'failing',
+                    },
+                ),
             )
-            ->wait();
-
-        return $console;
+            ->wait()
+            ->match(
+                static fn() => $console,
+                static fn() => $console,
+            );
     }
 }

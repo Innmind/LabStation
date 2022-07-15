@@ -15,7 +15,10 @@ use Innmind\Server\Control\Server\{
     Command,
 };
 use Innmind\Filesystem\Name;
-use Innmind\Immutable\Map;
+use Innmind\Immutable\{
+    Map,
+    Str,
+};
 
 final class DockerCompose implements Trigger
 {
@@ -31,32 +34,44 @@ final class DockerCompose implements Trigger
     public function __invoke(Activity $activity, Console $console): Console
     {
         return match ($activity->type()) {
-            Type::start => $this->run($console),
+            Type::start => $this->attempt($console),
             default => $console,
         };
     }
 
+    private function attempt(Console $console): Console
+    {
+        return $this
+            ->filesystem
+            ->mount($console->workingDirectory())
+            ->get(new Name('docker-compose.yml'))
+            ->match(
+                fn() => $this->run($console),
+                static fn() => $console,
+            );
+    }
+
     private function run(Console $console): Console
     {
-        $project = $this->filesystem->mount($console->workingDirectory());
-
-        if (!$project->contains(new Name('docker-compose.yml'))) {
-            return $console;
-        }
-
         /** @var Map<non-empty-string, string> */
         $variables = $console
             ->variables()
             ->filter(static fn($key) => $key === 'PATH');
 
-        $this->processes->execute(
-            Command::foreground('docker-compose')
-                ->withArgument('up')
-                ->withShortOption('d')
-                ->withWorkingDirectory($console->workingDirectory())
-                ->withEnvironments($variables),
-        )->wait();
-
-        return $console;
+        return $this
+            ->processes
+            ->execute(
+                Command::foreground('docker-compose')
+                    ->withArgument('up')
+                    ->withShortOption('d')
+                    ->withWorkingDirectory($console->workingDirectory())
+                    ->withEnvironments($variables),
+            )
+            ->wait()
+            ->match(
+                static fn() => $console,
+                static fn() => $console
+                    ->error(Str::of("Failed to start docker\n")),
+            );
     }
 }
