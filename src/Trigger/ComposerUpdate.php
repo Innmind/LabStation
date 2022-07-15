@@ -9,60 +9,76 @@ use Innmind\LabStation\{
     Activity\Type,
 };
 use Innmind\CLI\{
-    Environment,
+    Console,
     Question\Question,
 };
-use Innmind\OperatingSystem\Sockets;
 use Innmind\Server\Control\Server\{
     Processes,
     Command,
     Process\Output,
 };
-use Innmind\Immutable\Str;
+use Innmind\Immutable\{
+    Map,
+    Str,
+};
 
 final class ComposerUpdate implements Trigger
 {
     private Processes $processes;
-    private Sockets $sockets;
 
-    public function __construct(Processes $processes, Sockets $sockets)
+    public function __construct(Processes $processes)
     {
         $this->processes = $processes;
-        $this->sockets = $sockets;
     }
 
-    public function __invoke(Activity $activity, Environment $env): void
+    public function __invoke(Activity $activity, Console $console): Console
     {
-        if (!$activity->is(Type::start())) {
-            return;
-        }
+        return match ($activity->type()) {
+            Type::start => $this->ask($console),
+            default => $console,
+        };
+    }
 
-        $output = $env->output();
-        $error = $env->error();
-
+    private function ask(Console $console): Console
+    {
         $ask = new Question('Update dependencies? [Y/n]');
-        $response = $ask($env, $this->sockets)->toString();
+        [$response, $console] = $ask($console);
 
-        if (($response ?: 'y') === 'n') {
-            return;
-        }
+        return $response
+            ->filter(static fn($response) => match ($response->toString()) {
+                'y', '' => true,
+                default => false,
+            })
+            ->match(
+                fn() => $this->run($console),
+                static fn() => $console,
+            );
+    }
 
-        $this
+    private function run(Console $console): Console
+    {
+        /** @var Map<non-empty-string, string> */
+        $variables = $console->variables()->filter(
+            static fn($key) => \in_array($key, ['HOME', 'USER', 'PATH'], true),
+        );
+
+        return $this
             ->processes
             ->execute(
                 Command::foreground('composer')
                     ->withOption('ansi')
                     ->withArgument('update')
-                    ->withWorkingDirectory($env->workingDirectory()),
+                    ->withWorkingDirectory($console->workingDirectory())
+                    ->withEnvironments($variables),
             )
             ->output()
-            ->foreach(static function(Str $line, Output\Type $type) use ($output, $error): void {
-                if ($type === Output\Type::output()) {
-                    $output->write($line);
-                } else {
-                    $error->write($line);
-                }
-            });
-        $output->write(Str::of("Dependencies updated!\n"));
+            ->reduce(
+                $console,
+                static fn(Console $console, $line, $type) => match ($type) {
+                    Output\Type::output => $console->output($line),
+                    Output\Type::error => $console->error($line),
+                },
+            )
+            ->output(Str::of("Dependencies updated!\n"));
     }
 }

@@ -3,9 +3,9 @@ declare(strict_types = 1);
 
 namespace Innmind\LabStation;
 
-use Innmind\CLI\Environment;
+use Innmind\CLI\Console;
 
 interface Trigger
 {
-    public function __invoke(Activity $activity, Environment $env): void;
+    public function __invoke(Activity $activity, Console $console): Console;
 }

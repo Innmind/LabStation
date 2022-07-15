@@ -9,7 +9,12 @@ use Innmind\LabStation\{
     Activity,
     Activity\Type,
 };
-use Innmind\CLI\Environment;
+use Innmind\CLI\{
+    Environment,
+    Console,
+    Command\Arguments,
+    Command\Options,
+};
 use PHPUnit\Framework\TestCase;
 
 class AllTest extends TestCase
@@ -24,23 +29,30 @@ class AllTest extends TestCase
         $trigger = new All(
             $trigger1 = $this->createMock(Trigger::class),
             $trigger2 = $this->createMock(Trigger::class),
-            $trigger3 = $this->createMock(Trigger::class)
+            $trigger3 = $this->createMock(Trigger::class),
         );
-        $activity = new Activity(Type::start(), []);
-        $env = $this->createMock(Environment::class);
+        $activity = new Activity(Type::start);
+        $console = Console::of(
+            $this->createMock(Environment::class),
+            new Arguments,
+            new Options,
+        );
         $trigger1
             ->expects($this->once())
             ->method('__invoke')
-            ->with($activity, $env);
+            ->with($activity, $console)
+            ->willReturn($console);
         $trigger2
             ->expects($this->once())
             ->method('__invoke')
-            ->with($activity, $env);
+            ->with($activity, $console)
+            ->willReturn($console);
         $trigger3
             ->expects($this->once())
             ->method('__invoke')
-            ->with($activity, $env);
+            ->with($activity, $console)
+            ->willReturn($console);
 
-        $this->assertNull($trigger($activity, $env));
+        $this->assertSame($console, $trigger($activity, $console));
     }
 }

@@ -4,13 +4,21 @@ declare(strict_types = 1);
 namespace Innmind\LabStation;
 
 use Innmind\LabStation\Activity\Type;
-use Innmind\ProcessManager\Manager;
+use Innmind\ProcessManager\{
+    Manager,
+    Running,
+    Process\Unkillable,
+};
 use Innmind\IPC\{
     IPC,
     Message,
     Process\Name,
 };
-use Innmind\CLI\Environment;
+use Innmind\CLI\Console;
+use Innmind\Immutable\{
+    Maybe,
+    Str,
+};
 
 final class Monitor
 {
@@ -33,7 +41,7 @@ final class Monitor
         Name $name,
         Iteration $iteration,
         Trigger $trigger,
-        Agent ...$agents
+        Agent ...$agents,
     ) {
         $this->protocol = $protocol;
         $this->manager = $manager;
@@ -44,30 +52,57 @@ final class Monitor
         $this->agents = $agents;
     }
 
-    public function __invoke(Environment $env): void
+    public function __invoke(Console $console): Console
     {
-        $project = $env->workingDirectory();
-        $agents = $this->manager;
+        $project = $console->workingDirectory();
+        $manager = $this->manager;
 
         foreach ($this->agents as $agent) {
-            $agents = $agents->schedule(static function() use ($agent, $project): void {
+            $manager = $manager->schedule(static function() use ($agent, $project): void {
                 $agent($project);
             });
         }
 
-        $agents = $agents();
-        ($this->trigger)(
-            new Activity(Type::start(), []),
-            $env,
-        );
+        return $manager
+            ->start()
+            ->maybe()
+            ->flatMap(fn($agents) => $this->start($agents, $console))
+            ->match(
+                static fn($console) => $console
+                    ->error(Str::of("Terminated\n"))
+                    ->exit(1),
+                static fn() => $console
+                    ->error(Str::of("Unable to start the agents\n"))
+                    ->exit(1),
+            );
+    }
 
-        $this->ipc->listen($this->name)(function(Message $message) use ($env): void {
-            $activity = $this->protocol->decode($message);
-            $this->iteration->start();
-            ($this->trigger)($activity, $env);
-            $this->iteration->end($env);
-        });
+    /**
+     * @return Maybe<Console>
+     */
+    private function start(Running $agents, Console $console): Maybe
+    {
+        $console = ($this->trigger)(new Activity(Type::start), $console);
 
-        $agents->kill();
+        $server = $this->ipc->listen($this->name);
+
+        /** @psalm-suppress InvalidArgument */
+        return $server(
+            $console,
+            function($message, $continuation, Console $console) {
+                $activity = $this->protocol->decode($message);
+                $this->iteration->start();
+                $console = ($this->trigger)($activity, $console);
+                $console = $this->iteration->end($console);
+
+                return $continuation->continue($console);
+            },
+        )
+            ->flatMap(
+                static fn(Console $console) => $agents
+                    ->kill()
+                    ->map(static fn() => $console),
+            )
+            ->maybe();
     }
 }

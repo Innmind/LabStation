@@ -7,7 +7,7 @@ use Innmind\LabStation\{
     Trigger,
     Activity,
 };
-use Innmind\CLI\Environment;
+use Innmind\CLI\Console;
 
 final class All implements Trigger
 {
@@ -22,10 +22,12 @@ final class All implements Trigger
         $this->triggers = $triggers;
     }
 
-    public function __invoke(Activity $activity, Environment $env): void
+    public function __invoke(Activity $activity, Console $console): Console
     {
         foreach ($this->triggers as $trigger) {
-            $trigger($activity, $env);
+            $console = $trigger($activity, $console);
         }
+
+        return $console;
     }
 }

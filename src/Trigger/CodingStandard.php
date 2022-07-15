@@ -9,7 +9,7 @@ use Innmind\LabStation\{
     Activity\Type,
     Iteration,
 };
-use Innmind\CLI\Environment;
+use Innmind\CLI\Console;
 use Innmind\Server\Control\Server\{
     Processes,
     Command,
@@ -17,7 +17,7 @@ use Innmind\Server\Control\Server\{
 };
 use Innmind\OperatingSystem\Filesystem;
 use Innmind\Filesystem\Name;
-use Innmind\Immutable\Str;
+use Innmind\Immutable\Map;
 
 final class CodingStandard implements Trigger
 {
@@ -28,39 +28,52 @@ final class CodingStandard implements Trigger
     public function __construct(
         Processes $processes,
         Filesystem $filesystem,
-        Iteration $iteration
+        Iteration $iteration,
     ) {
         $this->processes = $processes;
         $this->filesystem = $filesystem;
         $this->iteration = $iteration;
     }
 
-    public function __invoke(Activity $activity, Environment $env): void
+    public function __invoke(Activity $activity, Console $console): Console
     {
-        if (
-            !$activity->is(Type::sourcesModified()) &&
-            !$activity->is(Type::testsModified()) &&
-            !$activity->is(Type::fixturesModified()) &&
-            !$activity->is(Type::propertiesModified())
-        ) {
-            return;
-        }
+        return match ($activity->type()) {
+            Type::sourcesModified => $this->attempt($console),
+            Type::testsModified => $this->attempt($console),
+            Type::fixturesModified => $this->attempt($console),
+            Type::propertiesModified => $this->attempt($console),
+            default => $console,
+        };
+    }
 
-        $directory = $this->filesystem->mount($env->workingDirectory());
+    private function attempt(Console $console): Console
+    {
+        $directory = $this->filesystem->mount($console->workingDirectory());
 
-        if (!$directory->contains(new Name('.php_cs.dist')) && !$directory->contains(new Name('.php-cs-fixer.dist.php'))) {
-            return;
-        }
+        return $directory
+            ->get(new Name('.php_cs.dist'))
+            ->otherwise(static fn() => $directory->get(new Name('.php-cs-fixer.dist.php')))
+            ->match(
+                fn($file) => $this->run($console, $file->name()),
+                static fn() => $console,
+            );
+    }
 
-        $output = $env->output();
-        $error = $env->error();
+    private function run(Console $console, Name $file): Console
+    {
+        /** @var Map<non-empty-string, string> */
+        $variables = $console
+            ->variables()
+            ->filter(static fn($key) => $key === 'PATH');
+
         $command = Command::foreground('vendor/bin/php-cs-fixer')
             ->withArgument('fix')
             ->withOption('diff')
             ->withOption('dry-run')
-            ->withWorkingDirectory($env->workingDirectory());
+            ->withWorkingDirectory($console->workingDirectory())
+            ->withEnvironments($variables);
 
-        if ($directory->contains(new Name('.php_cs.dist'))) {
+        if ($file->toString() === '.php_cs.dist') {
             $command = $command
                 ->withOption('diff-format')
                 ->withArgument('udiff');
@@ -69,35 +82,42 @@ final class CodingStandard implements Trigger
         $process = $this
             ->processes
             ->execute($command);
-        $process
+        $console = $process
             ->output()
-            ->foreach(static function(Str $line, Output\Type $type) use ($output, $error): void {
-                if ($type === Output\Type::output()) {
-                    $output->write($line);
-                } else {
-                    $error->write($line);
-                }
-            });
-        $process->wait();
-        $successful = $process->exitCode()->successful();
+            ->reduce(
+                $console,
+                static fn(Console $console, $line, $type) => match ($type) {
+                    Output\Type::output => $console->output($line),
+                    Output\Type::error => $console->error($line),
+                },
+            );
+        $successful = $process->wait()->match(
+            static fn() => true,
+            static fn() => false,
+        );
 
         if (!$successful) {
             $this->iteration->failing();
         }
 
-        if ($env->arguments()->contains('--silent')) {
-            return;
+        if ($console->options()->contains('silent')) {
+            return $console;
         }
 
-        $text = 'Coding Standard : ';
-        $text .= $successful ? 'right' : 'wrong';
-
-        $this
+        return $this
             ->processes
             ->execute(
-                Command::foreground('say')
-                    ->withArgument($text)
+                Command::foreground('say')->withArgument(
+                    'Coding Standard : '. match ($successful) {
+                        true => 'right',
+                        false => 'wrong',
+                    },
+                ),
             )
-            ->wait();
+            ->wait()
+            ->match(
+                static fn() => $console,
+                static fn() => $console,
+            );
     }
 }
