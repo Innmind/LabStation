@@ -61,6 +61,7 @@ final class Psalm implements Trigger
             ->processes
             ->execute(
                 Command::foreground('vendor/bin/psalm')
+                    ->withOption('no-cache')
                     ->withWorkingDirectory($console->workingDirectory())
                     ->withEnvironments($variables),
             );

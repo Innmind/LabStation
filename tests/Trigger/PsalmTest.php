@@ -129,7 +129,7 @@ class PsalmTest extends TestCase
             ->method('execute')
             ->withConsecutive(
                 [$this->callback(static function($command): bool {
-                    return $command->toString() === 'vendor/bin/psalm' &&
+                    return $command->toString() === "vendor/bin/psalm '--no-cache'" &&
                         '/somewhere/' === $command->workingDirectory()->match(
                             static fn($path) => $path->toString(),
                             static fn() => null,
@@ -210,7 +210,7 @@ class PsalmTest extends TestCase
             ->method('execute')
             ->withConsecutive(
                 [$this->callback(static function($command): bool {
-                    return $command->toString() === 'vendor/bin/psalm' &&
+                    return $command->toString() === "vendor/bin/psalm '--no-cache'" &&
                         '/somewhere/' === $command->workingDirectory()->match(
                             static fn($path) => $path->toString(),
                             static fn() => null,
@@ -276,7 +276,7 @@ class PsalmTest extends TestCase
             ->method('execute')
             ->withConsecutive(
                 [$this->callback(static function($command): bool {
-                    return $command->toString() === 'vendor/bin/psalm' &&
+                    return $command->toString() === "vendor/bin/psalm '--no-cache'" &&
                         '/somewhere/' === $command->workingDirectory()->match(
                             static fn($path) => $path->toString(),
                             static fn() => null,
@@ -357,7 +357,7 @@ class PsalmTest extends TestCase
             ->method('execute')
             ->withConsecutive(
                 [$this->callback(static function($command): bool {
-                    return $command->toString() === 'vendor/bin/psalm' &&
+                    return $command->toString() === "vendor/bin/psalm '--no-cache'" &&
                         '/somewhere/' === $command->workingDirectory()->match(
                             static fn($path) => $path->toString(),
                             static fn() => null,
@@ -425,7 +425,7 @@ class PsalmTest extends TestCase
             ->expects($this->once())
             ->method('execute')
             ->with($this->callback(static function($command): bool {
-                return $command->toString() === 'vendor/bin/psalm' &&
+                return $command->toString() === "vendor/bin/psalm '--no-cache'" &&
                     '/somewhere/' === $command->workingDirectory()->match(
                         static fn($path) => $path->toString(),
                         static fn() => null,
