@@ -14,13 +14,12 @@ use Innmind\Server\Control\Server\{
     Process,
     Process\Output,
 };
-use Innmind\CLI\Environment;
-use Innmind\OperatingSystem\Sockets;
-use Innmind\Stream\{
-    Writable,
-    Readable,
+use Innmind\CLI\{
+    Environment,
+    Console,
+    Command\Arguments,
+    Command\Options,
 };
-use Innmind\Url\Path;
 use Innmind\Immutable\{
     Str,
     Sequence,
@@ -35,8 +34,7 @@ class ComposerUpdateTest extends TestCase
             Trigger::class,
             new ComposerUpdate(
                 $this->createMock(Processes::class),
-                $this->createMock(Sockets::class),
-            )
+            ),
         );
     }
 
@@ -44,15 +42,25 @@ class ComposerUpdateTest extends TestCase
     {
         $trigger = new ComposerUpdate(
             $processes = $this->createMock(Processes::class),
-            $this->createMock(Sockets::class),
         );
         $processes
             ->expects($this->never())
             ->method('execute');
+        $console = Console::of(
+            Environment\InMemory::of(
+                [],
+                true,
+                [],
+                [],
+                '/somewhere',
+            ),
+            new Arguments,
+            new Options,
+        );
 
-        $this->assertNull($trigger(
-            new Activity(Type::sourcesModified(), []),
-            $this->createMock(Environment::class)
+        $this->assertSame($console, $trigger(
+            new Activity(Type::sourcesModified),
+            $console,
         ));
     }
 
@@ -60,111 +68,78 @@ class ComposerUpdateTest extends TestCase
     {
         $trigger = new ComposerUpdate(
             $processes = $this->createMock(Processes::class),
-            new Sockets\Unix,
         );
         $processes
             ->expects($this->once())
             ->method('execute')
             ->with($this->callback(static function($command): bool {
                 return $command->toString() === "composer '--ansi' 'update'" &&
-                    $command->workingDirectory()->toString() === '/somewhere';
+                    '/somewhere/' === $command->workingDirectory()->match(
+                        static fn($path) => $path->toString(),
+                        static fn() => null,
+                    );
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
             ->expects($this->once())
             ->method('output')
-            ->willReturn($output = $this->createMock(Output::class));
-        $output
-            ->expects($this->once())
-            ->method('foreach')
-            ->with($this->callback(static function($listen): bool {
-                $listen(Str::of('some output'), Output\Type::output());
-                $listen(Str::of('some error'), Output\Type::error());
+            ->willReturn(new Output\Output(Sequence::of(
+                [Str::of('some output'), Output\Type::output],
+                [Str::of('some error'), Output\Type::error],
+            )));
+        $console = Console::of(
+            Environment\InMemory::of(
+                ["\n"],
+                true,
+                [],
+                [],
+                '/somewhere',
+            ),
+            new Arguments,
+            new Options,
+        );
 
-                return true;
-            }));
-        $env = $this->createMock(Environment::class);
-        $env
-            ->expects($this->any())
-            ->method('interactive')
-            ->willReturn(true);
-        $env
-            ->expects($this->once())
-            ->method('arguments')
-            ->willReturn(Sequence::strings());
-        $env
-            ->expects($this->once())
-            ->method('workingDirectory')
-            ->willReturn(Path::of('/somewhere'));
-        $input = \fopen('php://temp', 'r+');
-        \fwrite($input, "\n");
-        $env
-            ->expects($this->once())
-            ->method('input')
-            ->willReturn(new Readable\Stream($input));
-        $env
-            ->expects($this->any())
-            ->method('output')
-            ->willReturn($output = $this->createMock(Writable::class));
-        $env
-            ->expects($this->once())
-            ->method('error')
-            ->willReturn($error = $this->createMock(Writable::class));
-        $output
-            ->expects($this->exactly(3))
-            ->method('write')
-            ->withConsecutive(
-                [Str::of('Update dependencies? [Y/n] ')],
-                [Str::of('some output')],
-                [Str::of("Dependencies updated!\n")],
-            );
-        $error
-            ->expects($this->once())
-            ->method('write')
-            ->with(Str::of('some error'));
-
-        $this->assertNull($trigger(
-            new Activity(Type::start(), []),
-            $env
-        ));
+        $console = $trigger(
+            new Activity(Type::start),
+            $console,
+        );
+        $this->assertSame(
+            ['Update dependencies? [Y/n] ', 'some output', "Dependencies updated!\n"],
+            $console->environment()->outputs(),
+        );
+        $this->assertSame(
+            ['some error'],
+            $console->environment()->errors(),
+        );
     }
 
     public function testDoesntTriggerUpdateWhenNegativeResponse()
     {
         $trigger = new ComposerUpdate(
             $processes = $this->createMock(Processes::class),
-            new Sockets\Unix,
         );
         $processes
             ->expects($this->never())
             ->method('execute');
-        $env = $this->createMock(Environment::class);
-        $env
-            ->expects($this->any())
-            ->method('interactive')
-            ->willReturn(true);
-        $env
-            ->expects($this->once())
-            ->method('arguments')
-            ->willReturn(Sequence::strings());
-        $input = \fopen('php://temp', 'r+');
-        \fwrite($input, "n\n");
-        $env
-            ->expects($this->once())
-            ->method('input')
-            ->willReturn(new Readable\Stream($input));
-        $env
-            ->expects($this->any())
-            ->method('output')
-            ->willReturn($output = $this->createMock(Writable::class));
-        $output
-            ->expects($this->once())
-            ->method('write')
-            ->with(Str::of('Update dependencies? [Y/n] '));
+        $console = Console::of(
+            Environment\InMemory::of(
+                ["n\n"],
+                true,
+                [],
+                [],
+                '/somewhere',
+            ),
+            new Arguments,
+            new Options,
+        );
 
-        $this->assertNull($trigger(
-            new Activity(Type::start(), []),
-            $env
-        ));
+        $console = $trigger(
+            new Activity(Type::start),
+            $console,
+        );
+        $this->assertSame(
+            ['Update dependencies? [Y/n] '],
+            $console->environment()->outputs(),
+        );
     }
 }

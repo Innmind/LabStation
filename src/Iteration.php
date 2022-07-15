@@ -3,7 +3,7 @@ declare(strict_types = 1);
 
 namespace Innmind\LabStation;
 
-use Innmind\CLI\Environment;
+use Innmind\CLI\Console;
 use Innmind\Immutable\Str;
 
 final class Iteration
@@ -20,17 +20,17 @@ final class Iteration
         $this->shouldClearTerminal = false;
     }
 
-    public function end(Environment $env): void
+    public function end(Console $console): Console
     {
         if (!$this->shouldClearTerminal) {
-            return;
+            return $console;
         }
 
-        if ($env->arguments()->contains('--keep-output')) {
-            return;
+        if ($console->options()->contains('keep-output')) {
+            return $console;
         }
 
         // clear terminal
-        $env->output()->write(Str::of("\033[2J\033[H"));
+        return $console->output(Str::of("\033[2J\033[H"));
     }
 }

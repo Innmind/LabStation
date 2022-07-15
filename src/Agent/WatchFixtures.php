@@ -15,6 +15,10 @@ use Innmind\IPC\{
     Process\Name,
 };
 use Innmind\Url\Path;
+use Innmind\Immutable\{
+    Sequence,
+    Either,
+};
 
 final class WatchFixtures implements Agent
 {
@@ -27,7 +31,7 @@ final class WatchFixtures implements Agent
         Protocol $protocol,
         Filesystem $filesystem,
         IPC $ipc,
-        Name $monitor
+        Name $monitor,
     ) {
         $this->protocol = $protocol;
         $this->filesystem = $filesystem;
@@ -43,14 +47,17 @@ final class WatchFixtures implements Agent
             return;
         }
 
-        $this->filesystem->watch($fixtures)(function() {
-            $monitor = $this->ipc->get($this->monitor);
-            $monitor->send(
-                $this->protocol->encode(
-                    new Activity(Type::fixturesModified(), []),
-                ),
-            );
-            $monitor->close();
-        });
+        $this->filesystem->watch($fixtures)(
+            $this->ipc,
+            fn(IPC $ipc) => $ipc
+                ->get($this->monitor)
+                ->flatMap(fn($process) => $process->send(Sequence::of(
+                    $this->protocol->encode(new Activity(Type::fixturesModified)),
+                )))
+                ->flatMap(static fn($process) => $process->close())
+                ->either()
+                ->map(static fn() => $ipc)
+                ->otherwise(static fn() => Either::right($ipc)), // even if it failed to send the message continue to watch for file changes
+        );
     }
 }

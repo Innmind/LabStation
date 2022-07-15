@@ -22,7 +22,6 @@ final class Json implements Protocol
             new MediaType('application', 'json'),
             Str::of(Format::encode([
                 'type' => $activity->type()->toString(),
-                'data' => $activity->data(),
             ])),
         );
     }
@@ -33,12 +32,9 @@ final class Json implements Protocol
             throw new UnknownMessage($message->content()->toString());
         }
 
-        /** @var array{type: string, data: array} */
+        /** @var array{type: string} */
         $content = Format::decode($message->content()->toString());
 
-        return new Activity(
-            Type::of($content['type']),
-            $content['data'],
-        );
+        return new Activity(Type::of($content['type']));
     }
 }

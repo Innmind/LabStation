@@ -9,38 +9,61 @@ use Innmind\LabStation\{
     Activity\Type,
     Iteration,
 };
-use Innmind\CLI\Environment;
+use Innmind\OperatingSystem\Filesystem;
+use Innmind\CLI\Console;
 use Innmind\Server\Control\Server\{
     Processes,
     Command,
     Process\Output,
 };
-use Innmind\Immutable\Str;
+use Innmind\Filesystem\Name;
+use Innmind\Immutable\Map;
 
 final class Tests implements Trigger
 {
+    private Filesystem $filesystem;
     private Processes $processes;
     private Iteration $iteration;
 
-    public function __construct(Processes $processes, Iteration $iteration)
-    {
+    public function __construct(
+        Filesystem $filesystem,
+        Processes $processes,
+        Iteration $iteration,
+    ) {
+        $this->filesystem = $filesystem;
         $this->processes = $processes;
         $this->iteration = $iteration;
     }
 
-    public function __invoke(Activity $activity, Environment $env): void
+    public function __invoke(Activity $activity, Console $console): Console
     {
-        if (
-            !$activity->is(Type::sourcesModified()) &&
-            !$activity->is(Type::testsModified()) &&
-            !$activity->is(Type::fixturesModified()) &&
-            !$activity->is(Type::propertiesModified())
-        ) {
-            return;
-        }
+        return match ($activity->type()) {
+            Type::sourcesModified => $this->attempt($console),
+            Type::testsModified => $this->attempt($console),
+            Type::fixturesModified => $this->attempt($console),
+            Type::propertiesModified => $this->attempt($console),
+            default => $console,
+        };
+    }
 
-        $output = $env->output();
-        $error = $env->error();
+    private function attempt(Console $console): Console
+    {
+        return $this
+            ->filesystem
+            ->mount($console->workingDirectory())
+            ->get(new Name('phpunit.xml.dist'))
+            ->match(
+                fn() => $this->run($console),
+                static fn() => $console,
+            );
+    }
+
+    private function run(Console $console): Console
+    {
+        /** @var Map<non-empty-string, string> */
+        $variables = $console
+            ->variables()
+            ->filter(static fn($key) => $key === 'PATH');
 
         $process = $this
             ->processes
@@ -48,37 +71,45 @@ final class Tests implements Trigger
                 Command::foreground('vendor/bin/phpunit')
                     ->withOption('colors', 'always')
                     ->withOption('fail-on-warning')
-                    ->withWorkingDirectory($env->workingDirectory()),
+                    ->withWorkingDirectory($console->workingDirectory())
+                    ->withEnvironments($variables),
             );
-        $process
+        $console = $process
             ->output()
-            ->foreach(static function(Str $line, Output\Type $type) use ($output, $error): void {
-                if ($type === Output\Type::output()) {
-                    $output->write($line);
-                } else {
-                    $error->write($line);
-                }
-            });
-        $process->wait();
-        $successful = $process->exitCode()->successful();
+            ->reduce(
+                $console,
+                static fn(Console $console, $line, $type) => match ($type) {
+                    Output\Type::output => $console->output($line),
+                    Output\Type::error => $console->error($line),
+                },
+            );
+        $successful = $process->wait()->match(
+            static fn() => true,
+            static fn() => false,
+        );
 
         if (!$successful) {
             $this->iteration->failing();
         }
 
-        if ($env->arguments()->contains('--silent')) {
-            return;
+        if ($console->options()->contains('silent')) {
+            return $console;
         }
 
-        $text = 'PHPUnit : ';
-        $text .= $successful ? 'ok' : 'failing';
-
-        $this
+        return $this
             ->processes
             ->execute(
-                Command::foreground('say')
-                    ->withArgument($text),
+                Command::foreground('say')->withArgument(
+                    'PHPUnit : '. match ($successful) {
+                        true => 'ok',
+                        false => 'failing',
+                    },
+                ),
             )
-            ->wait();
+            ->wait()
+            ->match(
+                static fn() => $console,
+                static fn() => $console,
+            );
     }
 }

@@ -26,12 +26,12 @@ class JsonTest extends TestCase
     {
         $json = new Json;
 
-        $message = $json->encode(new Activity(Type::sourcesModified(), ['foo' => 'bar']));
+        $message = $json->encode(new Activity(Type::sourcesModified));
 
         $this->assertInstanceOf(Message::class, $message);
         $this->assertSame('application/json', $message->mediaType()->toString());
         $this->assertSame(
-            '{"type":"sourcesModified","data":{"foo":"bar"}}',
+            '{"type":"sourcesModified"}',
             $message->content()->toString(),
         );
     }
@@ -43,7 +43,7 @@ class JsonTest extends TestCase
 
         (new Json)->decode(new Message\Generic(
             new MediaType('text', 'plain'),
-            Str::of('foobar')
+            Str::of('foobar'),
         ));
     }
 
@@ -51,11 +51,10 @@ class JsonTest extends TestCase
     {
         $activity = (new Json)->decode(new Message\Generic(
             new MediaType('application', 'json'),
-            Str::of('{"type":"sourcesModified","data":{"foo":"bar"}}')
+            Str::of('{"type":"sourcesModified"}'),
         ));
 
         $this->assertInstanceOf(Activity::class, $activity);
-        $this->assertTrue($activity->is(Type::sourcesModified()));
-        $this->assertSame(['foo' => 'bar'], $activity->data());
+        $this->assertSame(Type::sourcesModified, $activity->type());
     }
 }

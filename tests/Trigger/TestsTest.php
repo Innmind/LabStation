@@ -10,18 +10,30 @@ use Innmind\LabStation\{
     Activity\Type,
     Iteration,
 };
+use Innmind\OperatingSystem\Filesystem;
 use Innmind\Server\Control\Server\{
     Processes,
     Process,
     Process\Output,
     Process\ExitCode,
 };
-use Innmind\CLI\Environment;
-use Innmind\Stream\Writable;
-use Innmind\Url\Path;
+use Innmind\CLI\{
+    Environment,
+    Console,
+    Command\Arguments,
+    Command\Options,
+};
+use Innmind\Filesystem\{
+    Adapter,
+    File\File,
+    File\Content,
+};
 use Innmind\Immutable\{
     Sequence,
     Str,
+    Either,
+    SideEffect,
+    Map,
 };
 use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
@@ -37,23 +49,33 @@ class TestsTest extends TestCase
     {
         $this->assertInstanceOf(
             Trigger::class,
-            new Tests($this->createMock(Processes::class), new Iteration)
+            new Tests(
+                $this->createMock(Filesystem::class),
+                $this->createMock(Processes::class),
+                new Iteration,
+            ),
         );
     }
 
     public function testDoNothingWhenNotOfExpectedType()
     {
         $trigger = new Tests(
+            $this->createMock(Filesystem::class),
             $processes = $this->createMock(Processes::class),
             new Iteration,
         );
         $processes
             ->expects($this->never())
             ->method('execute');
+        $console = Console::of(
+            $this->createMock(Environment::class),
+            new Arguments,
+            new Options,
+        );
 
-        $this->assertNull($trigger(
-            new Activity(Type::start(), []),
-            $this->createMock(Environment::class)
+        $this->assertSame($console, $trigger(
+            new Activity(Type::start),
+            $console,
         ));
     }
 
@@ -61,250 +83,334 @@ class TestsTest extends TestCase
     {
         $this
             ->forAll(Set\Elements::of(
-                Type::sourcesModified(),
-                Type::testsModified(),
-                Type::fixturesModified(),
-                Type::propertiesModified(),
+                Type::sourcesModified,
+                Type::testsModified,
+                Type::fixturesModified,
+                Type::propertiesModified,
             ))
             ->then(function($type) {
                 $trigger = new Tests(
+                    $filesystem = $this->createMock(Filesystem::class),
                     $processes = $this->createMock(Processes::class),
                     $iteration = new Iteration,
                 );
+                $adapter = Adapter\InMemory::new();
+                $adapter->add(File::named(
+                    'phpunit.xml.dist',
+                    Content\None::of(),
+                ));
+                $filesystem
+                    ->expects($this->once())
+                    ->method('mount')
+                    ->willReturn($adapter);
                 $processes
                     ->expects($this->exactly(2))
                     ->method('execute')
                     ->withConsecutive(
                         [$this->callback(static function($command): bool {
                             return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
-                                $command->workingDirectory()->toString() === '/somewhere';
+                                '/somewhere/' === $command->workingDirectory()->match(
+                                    static fn($path) => $path->toString(),
+                                    static fn() => null,
+                                );
                         })],
                         [$this->callback(static function($command): bool {
                             return $command->toString() === "say 'PHPUnit : ok'";
                         })],
                     )
                     ->will($this->onConsecutiveCalls(
-                        $process = $this->createMock(Process::class),
-                        $this->createMock(Process::class),
+                        $tests = $this->createMock(Process::class),
+                        $say = $this->createMock(Process::class),
                     ));
-                $process
+                $tests
                     ->expects($this->once())
                     ->method('output')
-                    ->willReturn($output = $this->createMock(Output::class));
-                $output
-                    ->expects($this->once())
-                    ->method('foreach')
-                    ->with($this->callback(static function($listen): bool {
-                        $listen(Str::of('some output'), Output\Type::output());
-                        $listen(Str::of('some error'), Output\Type::error());
-
-                        return true;
-                    }));
-                $process
+                    ->willReturn(new Output\Output(Sequence::of(
+                        [Str::of('some output'), Output\Type::output],
+                        [Str::of('some error'), Output\Type::error],
+                    )));
+                // we say here that tests are successful even though we have an
+                // error in the output in order to verify the terminal is cleared
+                // on success
+                $tests
                     ->expects($this->once())
                     ->method('wait')
-                    ->will($this->returnSelf());
-                $process
+                    ->willReturn(Either::right(new SideEffect));
+                $say
                     ->expects($this->once())
-                    ->method('exitCode')
-                    ->willReturn(new ExitCode(0));
-                $env = $this->createMock(Environment::class);
-                $env
-                    ->expects($this->any())
-                    ->method('arguments')
-                    ->willReturn(Sequence::strings());
-                $env
-                    ->expects($this->once())
-                    ->method('workingDirectory')
-                    ->willReturn(Path::of('/somewhere'));
-                $env
-                    ->expects($this->any())
-                    ->method('output')
-                    ->willReturn($output = $this->createMock(Writable::class));
-                $env
-                    ->expects($this->once())
-                    ->method('error')
-                    ->willReturn($error = $this->createMock(Writable::class));
-                $output
-                    ->expects($this->exactly(2))
-                    ->method('write')
-                    ->withConsecutive(
-                        [Str::of('some output')],
-                        [Str::of("\033[2J\033[H")],
-                    );
-                $error
-                    ->expects($this->once())
-                    ->method('write')
-                    ->with(Str::of('some error'));
+                    ->method('wait')
+                    ->willReturn(Either::right(new SideEffect));
+                $console = Console::of(
+                    Environment\InMemory::of(
+                        [],
+                        true,
+                        [],
+                        [],
+                        '/somewhere',
+                    ),
+                    new Arguments,
+                    new Options,
+                );
 
                 $iteration->start();
-                $this->assertNull($trigger(
-                    new Activity($type, []),
-                    $env
-                ));
-                $iteration->end($env);
+                $console = $trigger(
+                    new Activity($type),
+                    $console,
+                );
+                $console = $iteration->end($console);
+                $this->assertSame(
+                    ['some output', "\033[2J\033[H"],
+                    $console->environment()->outputs(),
+                );
+                $this->assertSame(
+                    ['some error'],
+                    $console->environment()->errors(),
+                );
             });
     }
 
-    public function testDoesnClearTerminalOnSuccessfullTestWhenSpecifiedOptionProvided()
+    public function testDoesntTriggerWhenNoPHPUnitFile()
+    {
+        $this
+            ->forAll(Set\Elements::of(
+                Type::sourcesModified,
+                Type::testsModified,
+                Type::fixturesModified,
+                Type::propertiesModified,
+            ))
+            ->then(function($type) {
+                $trigger = new Tests(
+                    $filesystem = $this->createMock(Filesystem::class),
+                    $processes = $this->createMock(Processes::class),
+                    $iteration = new Iteration,
+                );
+                $adapter = Adapter\InMemory::new();
+                $filesystem
+                    ->expects($this->once())
+                    ->method('mount')
+                    ->willReturn($adapter);
+                $processes
+                    ->expects($this->never())
+                    ->method('execute');
+                $console = Console::of(
+                    Environment\InMemory::of(
+                        [],
+                        true,
+                        [],
+                        [],
+                        '/somewhere',
+                    ),
+                    new Arguments,
+                    new Options,
+                );
+
+                $iteration->start();
+                $console = $trigger(
+                    new Activity($type),
+                    $console,
+                );
+                $console = $iteration->end($console);
+                $this->assertSame(
+                    ["\033[2J\033[H"],
+                    $console->environment()->outputs(),
+                );
+                $this->assertSame(
+                    [],
+                    $console->environment()->errors(),
+                );
+            });
+    }
+
+    public function testDoesntClearTerminalOnSuccessfullTestWhenSpecifiedOptionProvided()
     {
         $trigger = new Tests(
+            $filesystem = $this->createMock(Filesystem::class),
             $processes = $this->createMock(Processes::class),
             $iteration = new Iteration,
         );
+        $adapter = Adapter\InMemory::new();
+        $adapter->add(File::named(
+            'phpunit.xml.dist',
+            Content\None::of(),
+        ));
+        $filesystem
+            ->expects($this->once())
+            ->method('mount')
+            ->willReturn($adapter);
         $processes
             ->expects($this->exactly(2))
             ->method('execute')
             ->withConsecutive(
                 [$this->callback(static function($command): bool {
                     return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
-                        $command->workingDirectory()->toString() === '/somewhere';
+                        '/somewhere/' === $command->workingDirectory()->match(
+                            static fn($path) => $path->toString(),
+                            static fn() => null,
+                        );
                 })],
                 [$this->callback(static function($command): bool {
                     return $command->toString() === "say 'PHPUnit : ok'";
                 })],
             )
             ->will($this->onConsecutiveCalls(
-                $process = $this->createMock(Process::class),
-                $this->createMock(Process::class),
+                $tests = $this->createMock(Process::class),
+                $say = $this->createMock(Process::class),
             ));
-        $process
+        $tests
             ->expects($this->once())
-            ->method('wait');
-        $process
+            ->method('wait')
+            ->willReturn(Either::right(new SideEffect));
+        $tests
             ->expects($this->once())
-            ->method('exitCode')
-            ->willReturn(new ExitCode(0));
-        $env = $this->createMock(Environment::class);
-        $env
-            ->expects($this->any())
-            ->method('arguments')
-            ->willReturn(Sequence::strings('--keep-output'));
-        $env
-            ->expects($this->once())
-            ->method('workingDirectory')
-            ->willReturn(Path::of('/somewhere'));
-        $env
-            ->expects($this->any())
             ->method('output')
-            ->willReturn($output = $this->createMock(Writable::class));
-        $output
-            ->expects($this->never())
-            ->method('write');
+            ->willReturn(new Output\Output(Sequence::of()));
+        $say
+            ->expects($this->once())
+            ->method('wait')
+            ->willReturn(Either::right(new SideEffect));
+        $console = Console::of(
+            Environment\InMemory::of(
+                [],
+                true,
+                ['--keep-output'],
+                [],
+                '/somewhere',
+            ),
+            new Arguments,
+            new Options(Map::of(['keep-output', ''])),
+        );
 
         $iteration->start();
-        $this->assertNull($trigger(
-            new Activity(Type::sourcesModified(), []),
-            $env
-        ));
-        $iteration->end($env);
+        $console = $trigger(
+            new Activity(Type::sourcesModified),
+            $console,
+        );
+        $console = $iteration->end($console);
+        $this->assertSame([], $console->environment()->outputs());
     }
 
     public function testSaidMessageIsChangedWhenTestsAreFailing()
     {
         $trigger = new Tests(
+            $filesystem = $this->createMock(Filesystem::class),
             $processes = $this->createMock(Processes::class),
             $iteration = new Iteration,
         );
+        $adapter = Adapter\InMemory::new();
+        $adapter->add(File::named(
+            'phpunit.xml.dist',
+            Content\None::of(),
+        ));
+        $filesystem
+            ->expects($this->once())
+            ->method('mount')
+            ->willReturn($adapter);
         $processes
             ->expects($this->exactly(2))
             ->method('execute')
             ->withConsecutive(
                 [$this->callback(static function($command): bool {
                     return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
-                        $command->workingDirectory()->toString() === '/somewhere';
+                        '/somewhere/' === $command->workingDirectory()->match(
+                            static fn($path) => $path->toString(),
+                            static fn() => null,
+                        );
                 })],
                 [$this->callback(static function($command): bool {
                     return $command->toString() === "say 'PHPUnit : failing'";
                 })],
             )
             ->will($this->onConsecutiveCalls(
-                $process = $this->createMock(Process::class),
-                $this->createMock(Process::class),
+                $tests = $this->createMock(Process::class),
+                $say = $this->createMock(Process::class),
             ));
-        $process
+        $tests
             ->expects($this->once())
             ->method('output')
-            ->willReturn($output = $this->createMock(Output::class));
-        $output
-            ->expects($this->once())
-            ->method('foreach')
-            ->with($this->callback(static function($listen): bool {
-                return true;
-            }));
-        $process
+            ->willReturn(new Output\Output(Sequence::of()));
+        $tests
             ->expects($this->once())
             ->method('wait')
-            ->will($this->returnSelf());
-        $process
+            ->willReturn(Either::left(new ExitCode(1)));
+        $say
             ->expects($this->once())
-            ->method('exitCode')
-            ->willReturn(new ExitCode(1));
-        $env = $this->createMock(Environment::class);
-        $env
-            ->expects($this->once())
-            ->method('workingDirectory')
-            ->willReturn(Path::of('/somewhere'));
-        $env
-            ->expects($this->once())
-            ->method('arguments')
-            ->willReturn(Sequence::strings());
-        $env
-            ->expects($this->any())
-            ->method('output')
-            ->willReturn($output = $this->createMock(Writable::class));
-        $output
-            ->expects($this->never())
-            ->method('write');
+            ->method('wait')
+            ->willReturn(Either::right(new SideEffect));
+        $console = Console::of(
+            Environment\InMemory::of(
+                [],
+                true,
+                [],
+                [],
+                '/somewhere',
+            ),
+            new Arguments,
+            new Options,
+        );
 
         $iteration->start();
-        $this->assertNull($trigger(
-            new Activity(Type::sourcesModified(), []),
-            $env
-        ));
-        $iteration->end($env);
+        $console = $trigger(
+            new Activity(Type::sourcesModified),
+            $console,
+        );
+        $console = $iteration->end($console);
+        $this->assertSame([], $console->environment()->outputs());
     }
 
     public function testNoMessageIsSpokenWhenUsingTheSilentOption()
     {
         $trigger = new Tests(
+            $filesystem = $this->createMock(Filesystem::class),
             $processes = $this->createMock(Processes::class),
             $iteration = new Iteration,
         );
+        $adapter = Adapter\InMemory::new();
+        $adapter->add(File::named(
+            'phpunit.xml.dist',
+            Content\None::of(),
+        ));
+        $filesystem
+            ->expects($this->once())
+            ->method('mount')
+            ->willReturn($adapter);
         $processes
             ->expects($this->once())
             ->method('execute')
             ->with($this->callback(static function($command): bool {
                 return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
-                    $command->workingDirectory()->toString() === '/somewhere';
+                    '/somewhere/' === $command->workingDirectory()->match(
+                        static fn($path) => $path->toString(),
+                        static fn() => null,
+                    );
             }))
             ->willReturn($process = $this->createMock(Process::class));
         $process
             ->expects($this->once())
-            ->method('exitCode')
-            ->willReturn(new ExitCode(0));
+            ->method('wait')
+            ->willReturn(Either::right(new SideEffect));
         $process
             ->expects($this->once())
             ->method('output')
-            ->willReturn($output = $this->createMock(Output::class));
-        $output
-            ->expects($this->once())
-            ->method('foreach');
-        $env = $this->createMock(Environment::class);
-        $env
-            ->expects($this->once())
-            ->method('workingDirectory')
-            ->willReturn(Path::of('/somewhere'));
-        $env
-            ->expects($this->any())
-            ->method('arguments')
-            ->willReturn(Sequence::of('string', '--silent'));
+            ->willReturn(new Output\Output(Sequence::of()));
+        $console = Console::of(
+            Environment\InMemory::of(
+                [],
+                true,
+                ['--silent'],
+                [],
+                '/somewhere',
+            ),
+            new Arguments,
+            new Options(Map::of(['silent', ''])),
+        );
 
         $iteration->start();
-        $this->assertNull($trigger(
-            new Activity(Type::sourcesModified(), []),
-            $env
-        ));
-        $iteration->end($env);
+        $console = $trigger(
+            new Activity(Type::sourcesModified),
+            $console,
+        );
+        $console = $iteration->end($console);
+        $this->assertSame(["\033[2J\033[H"], $console->environment()->outputs());
+        $this->assertSame([], $console->environment()->errors());
     }
 }

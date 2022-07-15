@@ -15,14 +15,15 @@
         "issues": "http://github.com/Innmind/LabStation/issues"
     },
     "require": {
-        "php": "~7.4|~8.0",
-        "innmind/url": "~3.3",
-        "innmind/cli": "~2.0",
-        "innmind/operating-system": "~2.0",
+        "php": "~8.1",
+        "innmind/url": "~4.0",
+        "innmind/cli": "~3.0",
+        "innmind/operating-system": "~3.1",
         "innmind/json": "^1.1",
-        "symfony/dotenv": "~5.0",
-        "innmind/ipc": "~3.0",
-        "innmind/process-manager": "~3.0"
+        "innmind/ipc": "~4.0",
+        "innmind/process-manager": "~4.0",
+        "innmind/server-control": "~4.2",
+        "innmind/immutable": "~4.4"
     },
     "autoload": {
         "psr-4": {
@@ -39,7 +40,7 @@
         "phpunit/phpunit": "~9.0",
         "vimeo/psalm": "^4.1",
         "innmind/black-box": "^4.9",
-        "innmind/coding-standard": "^1.0"
+        "innmind/coding-standard": "~2.0"
     },
     "bin": ["lab-station"]
 }

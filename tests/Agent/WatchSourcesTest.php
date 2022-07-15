@@ -19,6 +19,12 @@ use Innmind\IPC\{
     Process\Name,
 };
 use Innmind\Url\Path;
+use Innmind\Immutable\{
+    Maybe,
+    Sequence,
+    SideEffect,
+    Either,
+};
 use PHPUnit\Framework\TestCase;
 
 class WatchSourcesTest extends TestCase
@@ -31,8 +37,8 @@ class WatchSourcesTest extends TestCase
                 $this->createMock(Protocol::class),
                 $this->createMock(Filesystem::class),
                 $this->createMock(IPC::class),
-                new Name('foo')
-            )
+                Name::of('foo'),
+            ),
         );
     }
 
@@ -42,26 +48,28 @@ class WatchSourcesTest extends TestCase
             $protocol = $this->createMock(Protocol::class),
             $filesystem = $this->createMock(Filesystem::class),
             $ipc = $this->createMock(IPC::class),
-            $name = new Name('foo')
+            $name = Name::of('foo'),
         );
         $project = Path::of('/vendor/package/');
         $protocol
             ->expects($this->once())
             ->method('encode')
-            ->with(new Activity(Type::sourcesModified(), []))
+            ->with(new Activity(Type::sourcesModified))
             ->willReturn($message = $this->createMock(Message::class));
         $ipc
             ->expects($this->once())
             ->method('get')
             ->with($name)
-            ->willReturn($process = $this->createMock(Process::class));
+            ->willReturn(Maybe::just($process = $this->createMock(Process::class)));
         $process
             ->expects($this->once())
             ->method('send')
-            ->with($message);
+            ->with(Sequence::of($message))
+            ->willReturn(Maybe::just($process));
         $process
             ->expects($this->once())
-            ->method('close');
+            ->method('close')
+            ->willReturn(Maybe::just(new SideEffect));
         $filesystem
             ->expects($this->once())
             ->method('watch')
@@ -70,11 +78,12 @@ class WatchSourcesTest extends TestCase
         $ping
             ->expects($this->once())
             ->method('__invoke')
-            ->with($this->callback(static function($listen): bool {
-                $listen(); // simulate folder modification
+            ->with($ipc, $this->callback(static function($listen) use ($ipc): bool {
+                $listen($ipc); // simulate folder modification
 
                 return true;
-            }));
+            }))
+            ->willReturn(Either::right($ipc));
 
         $this->assertNull($agent($project));
     }

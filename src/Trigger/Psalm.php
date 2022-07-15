@@ -9,7 +9,7 @@ use Innmind\LabStation\{
     Activity\Type,
     Iteration,
 };
-use Innmind\CLI\Environment;
+use Innmind\CLI\Console;
 use Innmind\Server\Control\Server\{
     Processes,
     Command,
@@ -17,7 +17,7 @@ use Innmind\Server\Control\Server\{
 };
 use Innmind\OperatingSystem\Filesystem;
 use Innmind\Filesystem\Name;
-use Innmind\Immutable\Str;
+use Innmind\Immutable\Map;
 
 final class Psalm implements Trigger
 {
@@ -28,66 +28,85 @@ final class Psalm implements Trigger
     public function __construct(
         Processes $processes,
         Filesystem $filesystem,
-        Iteration $iteration
+        Iteration $iteration,
     ) {
         $this->processes = $processes;
         $this->filesystem = $filesystem;
         $this->iteration = $iteration;
     }
 
-    public function __invoke(Activity $activity, Environment $env): void
+    public function __invoke(Activity $activity, Console $console): Console
     {
-        if (
-            !$activity->is(Type::sourcesModified()) &&
-            !$activity->is(Type::testsModified())
-        ) {
-            return;
-        }
+        return match ($activity->type()) {
+            Type::sourcesModified => $this->ettempt($console),
+            Type::testsModified => $this->ettempt($console),
+            default => $console,
+        };
+    }
 
-        $directory = $this->filesystem->mount($env->workingDirectory());
+    private function ettempt(Console $console): Console
+    {
+        return $this
+            ->filesystem
+            ->mount($console->workingDirectory())
+            ->get(new Name('psalm.xml'))
+            ->match(
+                fn() => $this->run($console),
+                static fn() => $console,
+            );
+    }
 
-        if (!$directory->contains(new Name('psalm.xml'))) {
-            return;
-        }
-
-        $output = $env->output();
-        $error = $env->error();
+    private function run(Console $console): Console
+    {
+        /** @var Map<non-empty-string, string> */
+        $variables = $console->variables()->filter(
+            static fn($key) => \in_array($key, ['HOME', 'USER', 'PATH'], true),
+        );
 
         $process = $this
             ->processes
             ->execute(
                 Command::foreground('vendor/bin/psalm')
-                    ->withWorkingDirectory($env->workingDirectory()),
+                    ->withOption('no-cache')
+                    ->withWorkingDirectory($console->workingDirectory())
+                    ->withEnvironments($variables),
             );
-        $process
+        $console = $process
             ->output()
-            ->foreach(static function(Str $line, Output\Type $type) use ($output, $error): void {
-                if ($type === Output\Type::output()) {
-                    $output->write($line);
-                } else {
-                    $error->write($line);
-                }
-            });
-        $process->wait();
-        $successful = $process->exitCode()->successful();
+            ->reduce(
+                $console,
+                static fn(Console $console, $line, $type) => match ($type) {
+                    Output\Type::output => $console->output($line),
+                    Output\Type::error => $console->error($line),
+                },
+            );
+        $successful = $process->wait()->match(
+            static fn() => true,
+            static fn() => false,
+        );
 
         if (!$successful) {
             $this->iteration->failing();
         }
 
-        if ($env->arguments()->contains('--silent')) {
-            return;
+        if ($console->options()->contains('silent')) {
+            return $console;
         }
 
-        $text = 'Psalm : ';
-        $text .= $successful ? 'ok' : 'failing';
-
-        $this
+        return $this
             ->processes
             ->execute(
-                Command::foreground('say')
-                    ->withArgument($text)
+                Command::foreground('say')->withArgument(
+                    'Psalm : '. match ($successful) {
+                        true  => 'ok',
+                        false => 'failing',
+                    },
+                ),
             )
-            ->wait();
+            ->wait()
+            ->match(
+                static fn() => $console,
+                static fn() => $console,
+            );
     }
 }
