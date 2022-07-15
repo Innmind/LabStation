@@ -10,7 +10,7 @@ use Innmind\IPC\{
     Message,
     Process\Name,
 };
-use Innmind\CLI\Environment;
+use Innmind\CLI\Console;
 
 final class Monitor
 {
@@ -44,27 +44,42 @@ final class Monitor
         $this->agents = $agents;
     }
 
-    public function __invoke(Environment $env): void
+    public function __invoke(Console $console): Console
     {
-        $project = $env->workingDirectory();
-        $agents = $this->manager;
+        $project = $console->workingDirectory();
+        $manager = $this->manager;
 
         foreach ($this->agents as $agent) {
-            $agents = $agents->schedule(static function() use ($agent, $project): void {
+            $manager = $manager->schedule(static function() use ($agent, $project): void {
                 $agent($project);
             });
         }
 
-        $agents = $agents();
-        ($this->trigger)(new Activity(Type::start), $env);
+        $agents = $manager->start()->match(
+            static fn($agents) => $agents,
+            static fn() => throw new \RuntimeException('Unable to start the agents'),
+        );
+        $console = ($this->trigger)(new Activity(Type::start), $console);
 
-        $this->ipc->listen($this->name)(function(Message $message) use ($env): void {
-            $activity = $this->protocol->decode($message);
-            $this->iteration->start();
-            ($this->trigger)($activity, $env);
-            $this->iteration->end($env);
-        });
+        $server = $this->ipc->listen($this->name);
+        /** @psalm-suppress InvalidArgument */
+        $console = $server(
+            $console,
+            function($message, $continuation, Console $console) {
+                $activity = $this->protocol->decode($message);
+                $this->iteration->start();
+                $console = ($this->trigger)($activity, $console);
+                $console = $this->iteration->end($console);
+
+                return $continuation->continue($console);
+            },
+        )->match(
+            static fn(Console $console) => $console,
+            static fn() => throw new \RuntimeException('Crash'),
+        );
 
         $agents->kill();
+
+        return $console;
     }
 }

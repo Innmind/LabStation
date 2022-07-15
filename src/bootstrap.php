@@ -9,20 +9,23 @@ use Innmind\ProcessManager\{
     Manager\Parallel,
     Runner\SubProcess,
 };
-use Innmind\IPC\Process\Name;
-use function Innmind\IPC\bootstrap as ipc;
+use Innmind\IPC\{
+    Factory as IPC,
+    Process\Name,
+};
 
 function bootstrap(OperatingSystem $os): Commands
 {
     $protocol = new Protocol\Json;
-    $ipc = ipc($os);
-    $monitor = new Name('lab-station-'.$os->process()->id()->toString());
+    $ipc = IPC::build($os);
+    /** @psalm-suppress ArgumentTypeCoercion It expects a literal string */
+    $monitor = Name::of('lab-station-'.$os->process()->id()->toString());
 
-    return new Commands(
+    return Commands::of(
         new Command\Work(
             new Monitor(
                 $protocol,
-                new Parallel(
+                Parallel::of(
                     new SubProcess($os->process()),
                 ),
                 $ipc,
@@ -46,7 +49,6 @@ function bootstrap(OperatingSystem $os): Commands
                     ),
                     new Trigger\ComposerUpdate(
                         $os->control()->processes(),
-                        $os->sockets(),
                     ),
                 ),
                 new Agent\WatchSources(

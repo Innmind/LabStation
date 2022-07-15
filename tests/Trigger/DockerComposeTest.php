@@ -10,13 +10,27 @@ use Innmind\LabStation\{
     Activity\Type,
 };
 use Innmind\OperatingSystem\Filesystem;
-use Innmind\Server\Control\Server\Processes;
-use Innmind\CLI\Environment;
+use Innmind\Server\Control\Server\{
+    Processes,
+    Process,
+};
+use Innmind\CLI\{
+    Environment,
+    Console,
+    Command\Arguments,
+    Command\Options,
+};
 use Innmind\Filesystem\{
     Adapter,
     Name,
+    File\File,
+    File\Content,
 };
 use Innmind\Url\Path;
+use Innmind\Immutable\{
+    Either,
+    SideEffect,
+};
 use PHPUnit\Framework\TestCase;
 
 class DockerComposeTest extends TestCase
@@ -44,10 +58,15 @@ class DockerComposeTest extends TestCase
         $processes
             ->expects($this->never())
             ->method('execute');
-
-        $this->assertNull($trigger(
-            new Activity(Type::sourcesModified),
+        $console = Console::of(
             $this->createMock(Environment::class),
+            new Arguments,
+            new Options,
+        );
+
+        $this->assertSame($console, $trigger(
+            new Activity(Type::sourcesModified),
+            $console,
         ));
     }
 
@@ -57,28 +76,29 @@ class DockerComposeTest extends TestCase
             $filesystem = $this->createMock(Filesystem::class),
             $processes = $this->createMock(Processes::class),
         );
-        $env = $this->createMock(Environment::class);
-        $env
-            ->expects($this->once())
-            ->method('workingDirectory')
-            ->willReturn(Path::of('/path/to/project/vendor/package'));
         $filesystem
             ->expects($this->once())
             ->method('mount')
-            ->with(Path::of('/path/to/project/vendor/package'))
-            ->willReturn($project = $this->createMock(Adapter::class));
-        $project
-            ->expects($this->once())
-            ->method('contains')
-            ->with(new Name('docker-compose.yml'))
-            ->willReturn(false);
+            ->with(Path::of('/path/to/project/vendor/package/'))
+            ->willReturn(Adapter\InMemory::new());
         $processes
             ->expects($this->never())
             ->method('execute');
+        $console = Console::of(
+            Environment\InMemory::of(
+                [],
+                true,
+                [],
+                [],
+                '/path/to/project/vendor/package',
+            ),
+            new Arguments,
+            new Options,
+        );
 
-        $this->assertNull($trigger(
+        $this->assertSame($console, $trigger(
             new Activity(Type::start),
-            $env,
+            $console,
         ));
     }
 
@@ -88,32 +108,46 @@ class DockerComposeTest extends TestCase
             $filesystem = $this->createMock(Filesystem::class),
             $processes = $this->createMock(Processes::class),
         );
-        $env = $this->createMock(Environment::class);
-        $env
-            ->expects($this->any())
-            ->method('workingDirectory')
-            ->willReturn(Path::of('/path/to/project/vendor/package'));
+        $project = Adapter\InMemory::new();
+        $project->add(File::named(
+            'docker-compose.yml',
+            Content\None::of(),
+        ));
         $filesystem
             ->expects($this->once())
             ->method('mount')
-            ->with(Path::of('/path/to/project/vendor/package'))
-            ->willReturn($project = $this->createMock(Adapter::class));
-        $project
-            ->expects($this->once())
-            ->method('contains')
-            ->with(new Name('docker-compose.yml'))
-            ->willReturn(true);
+            ->with(Path::of('/path/to/project/vendor/package/'))
+            ->willReturn($project);
         $processes
             ->expects($this->once())
             ->method('execute')
             ->with($this->callback(static function($command): bool {
                 return $command->toString() === "docker-compose 'up' '-d'" &&
-                    $command->workingDirectory()->toString() === '/path/to/project/vendor/package';
-            }));
+                    '/path/to/project/vendor/package/' === $command->workingDirectory()->match(
+                        static fn($path) => $path->toString(),
+                        static fn() => null,
+                    );
+            }))
+            ->willReturn($process = $this->createMock(Process::class));
+        $process
+            ->expects($this->once())
+            ->method('wait')
+            ->willReturn(Either::right(new SideEffect));
+        $console = Console::of(
+            Environment\InMemory::of(
+                [],
+                true,
+                [],
+                [],
+                '/path/to/project/vendor/package',
+            ),
+            new Arguments,
+            new Options,
+        );
 
-        $this->assertNull($trigger(
+        $this->assertSame($console, $trigger(
             new Activity(Type::start),
-            $env,
+            $console,
         ));
     }
 }

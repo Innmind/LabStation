@@ -6,9 +6,7 @@ namespace Innmind\LabStation\Command;
 use Innmind\LabStation\Monitor;
 use Innmind\CLI\{
     Command,
-    Command\Arguments,
-    Command\Options,
-    Environment,
+    Console,
 };
 
 final class Work implements Command
@@ -20,12 +18,15 @@ final class Work implements Command
         $this->monitor = $monitor;
     }
 
-    public function __invoke(Environment $env, Arguments $arguments, Options $options): void
+    public function __invoke(Console $console): Console
     {
-        ($this->monitor)($env);
+        return ($this->monitor)($console);
     }
 
-    public function toString(): string
+    /**
+     * @psalm-pure
+     */
+    public function usage(): string
     {
         return 'work --silent --keep-output';
     }

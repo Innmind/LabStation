@@ -9,13 +9,13 @@ use Innmind\LabStation\{
     Activity\Type,
     Iteration,
 };
-use Innmind\CLI\Environment;
+use Innmind\CLI\Console;
 use Innmind\Server\Control\Server\{
     Processes,
     Command,
     Process\Output,
 };
-use Innmind\Immutable\Str;
+use Innmind\Immutable\Map;
 
 final class Tests implements Trigger
 {
@@ -28,21 +28,23 @@ final class Tests implements Trigger
         $this->iteration = $iteration;
     }
 
-    public function __invoke(Activity $activity, Environment $env): void
+    public function __invoke(Activity $activity, Console $console): Console
     {
-        $_ = match ($activity->type()) {
-            Type::sourcesModified => $this->run($env),
-            Type::testsModified => $this->run($env),
-            Type::fixturesModified => $this->run($env),
-            Type::propertiesModified => $this->run($env),
-            default => null,
+        return match ($activity->type()) {
+            Type::sourcesModified => $this->run($console),
+            Type::testsModified => $this->run($console),
+            Type::fixturesModified => $this->run($console),
+            Type::propertiesModified => $this->run($console),
+            default => $console,
         };
     }
 
-    private function run(Environment $env): void
+    private function run(Console $console): Console
     {
-        $output = $env->output();
-        $error = $env->error();
+        /** @var Map<non-empty-string, string> */
+        $variables = $console
+            ->variables()
+            ->filter(static fn($key) => $key === 'PATH');
 
         $process = $this
             ->processes
@@ -50,26 +52,29 @@ final class Tests implements Trigger
                 Command::foreground('vendor/bin/phpunit')
                     ->withOption('colors', 'always')
                     ->withOption('fail-on-warning')
-                    ->withWorkingDirectory($env->workingDirectory()),
+                    ->withWorkingDirectory($console->workingDirectory())
+                    ->withEnvironments($variables),
             );
-        $process
+        $console = $process
             ->output()
-            ->foreach(static function(Str $line, Output\Type $type) use ($output, $error): void {
-                if ($type === Output\Type::output()) {
-                    $output->write($line);
-                } else {
-                    $error->write($line);
-                }
-            });
-        $process->wait();
-        $successful = $process->exitCode()->successful();
+            ->reduce(
+                $console,
+                static fn(Console $console, $line, $type) => match ($type) {
+                    Output\Type::output => $console->output($line),
+                    Output\Type::error => $console->error($line),
+                },
+            );
+        $successful = $process->wait()->match(
+            static fn() => true,
+            static fn() => false,
+        );
 
         if (!$successful) {
             $this->iteration->failing();
         }
 
-        if ($env->arguments()->contains('--silent')) {
-            return;
+        if ($console->options()->contains('silent')) {
+            return $console;
         }
 
         $text = 'PHPUnit : ';
@@ -82,5 +87,7 @@ final class Tests implements Trigger
                     ->withArgument($text),
             )
             ->wait();
+
+        return $console;
     }
 }

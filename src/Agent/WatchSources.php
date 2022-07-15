@@ -15,6 +15,10 @@ use Innmind\IPC\{
     Process\Name,
 };
 use Innmind\Url\Path;
+use Innmind\Immutable\{
+    Sequence,
+    Either,
+};
 
 final class WatchSources implements Agent
 {
@@ -39,14 +43,17 @@ final class WatchSources implements Agent
     {
         $src = $project->resolve(Path::of('src'));
 
-        $this->filesystem->watch($src)(function() {
-            $monitor = $this->ipc->get($this->monitor);
-            $monitor->send(
-                $this->protocol->encode(
-                    new Activity(Type::sourcesModified),
-                ),
-            );
-            $monitor->close();
-        });
+        $this->filesystem->watch($src)(
+            $this->ipc,
+            fn(IPC $ipc) => $ipc
+                ->get($this->monitor)
+                ->flatMap(fn($process) => $process->send(Sequence::of(
+                    $this->protocol->encode(new Activity(Type::sourcesModified)),
+                )))
+                ->flatMap(static fn($process) => $process->close())
+                ->either()
+                ->map(static fn() => $ipc)
+                ->otherwise(static fn() => Either::right($ipc)), // even if it failed to send the message continue to watch for file changes
+        );
     }
 }

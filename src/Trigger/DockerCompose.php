@@ -8,13 +8,14 @@ use Innmind\LabStation\{
     Activity,
     Activity\Type,
 };
-use Innmind\CLI\Environment;
+use Innmind\CLI\Console;
 use Innmind\OperatingSystem\Filesystem;
 use Innmind\Server\Control\Server\{
     Processes,
     Command,
 };
 use Innmind\Filesystem\Name;
+use Innmind\Immutable\Map;
 
 final class DockerCompose implements Trigger
 {
@@ -27,27 +28,35 @@ final class DockerCompose implements Trigger
         $this->processes = $processes;
     }
 
-    public function __invoke(Activity $activity, Environment $env): void
+    public function __invoke(Activity $activity, Console $console): Console
     {
-        $_ = match ($activity->type()) {
-            Type::start => $this->run($env),
-            default => null,
+        return match ($activity->type()) {
+            Type::start => $this->run($console),
+            default => $console,
         };
     }
 
-    private function run(Environment $env): void
+    private function run(Console $console): Console
     {
-        $project = $this->filesystem->mount($env->workingDirectory());
+        $project = $this->filesystem->mount($console->workingDirectory());
 
         if (!$project->contains(new Name('docker-compose.yml'))) {
-            return;
+            return $console;
         }
+
+        /** @var Map<non-empty-string, string> */
+        $variables = $console
+            ->variables()
+            ->filter(static fn($key) => $key === 'PATH');
 
         $this->processes->execute(
             Command::foreground('docker-compose')
                 ->withArgument('up')
                 ->withShortOption('d')
-                ->withWorkingDirectory($env->workingDirectory()),
-        );
+                ->withWorkingDirectory($console->workingDirectory())
+                ->withEnvironments($variables),
+        )->wait();
+
+        return $console;
     }
 }
