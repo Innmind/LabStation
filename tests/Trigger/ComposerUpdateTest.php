@@ -6,6 +6,7 @@ namespace Tests\Innmind\LabStation\Trigger;
 use Innmind\LabStation\{
     Trigger\ComposerUpdate,
     Trigger,
+    Triggers,
     Activity,
     Activity\Type,
 };
@@ -23,6 +24,7 @@ use Innmind\CLI\{
 use Innmind\Immutable\{
     Str,
     Sequence,
+    Set,
 };
 use PHPUnit\Framework\TestCase;
 
@@ -61,7 +63,43 @@ class ComposerUpdateTest extends TestCase
         $this->assertSame($console, $trigger(
             new Activity(Type::sourcesModified),
             $console,
+            Set::of(Triggers::composerUpdate),
         ));
+    }
+
+    public function testDoNothingWhenTriggerNotEnabled()
+    {
+        $trigger = new ComposerUpdate(
+            $processes = $this->createMock(Processes::class),
+        );
+        $processes
+            ->expects($this->never())
+            ->method('execute');
+        $console = Console::of(
+            Environment\InMemory::of(
+                ["\n"],
+                true,
+                [],
+                [],
+                '/somewhere',
+            ),
+            new Arguments,
+            new Options,
+        );
+
+        $console = $trigger(
+            new Activity(Type::start),
+            $console,
+            Set::of(),
+        );
+        $this->assertSame(
+            [],
+            $console->environment()->outputs(),
+        );
+        $this->assertSame(
+            [],
+            $console->environment()->errors(),
+        );
     }
 
     public function testTriggerUpdateOnStart()
@@ -102,6 +140,7 @@ class ComposerUpdateTest extends TestCase
         $console = $trigger(
             new Activity(Type::start),
             $console,
+            Set::of(Triggers::composerUpdate),
         );
         $this->assertSame(
             ['Update dependencies? [Y/n] ', 'some output', "Dependencies updated!\n"],
@@ -136,6 +175,7 @@ class ComposerUpdateTest extends TestCase
         $console = $trigger(
             new Activity(Type::start),
             $console,
+            Set::of(Triggers::composerUpdate),
         );
         $this->assertSame(
             ['Update dependencies? [Y/n] '],

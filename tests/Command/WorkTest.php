@@ -54,7 +54,13 @@ class WorkTest extends TestCase
     public function testUsage()
     {
         $this->assertSame(
-            'work --silent --keep-output',
+            <<<USAGE
+            work --silent --keep-output --triggers=
+
+            The triggers option can contain a comma separated list of values.
+
+            Triggers can contain : cs, composer, docker, psalm and tests
+            USAGE,
             (new Work(
                 new Monitor(
                     $this->createMock(Protocol::class),

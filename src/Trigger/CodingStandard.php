@@ -5,6 +5,7 @@ namespace Innmind\LabStation\Trigger;
 
 use Innmind\LabStation\{
     Trigger,
+    Triggers,
     Activity,
     Activity\Type,
     Iteration,
@@ -17,7 +18,10 @@ use Innmind\Server\Control\Server\{
 };
 use Innmind\OperatingSystem\Filesystem;
 use Innmind\Filesystem\Name;
-use Innmind\Immutable\Map;
+use Innmind\Immutable\{
+    Map,
+    Set,
+};
 
 final class CodingStandard implements Trigger
 {
@@ -35,8 +39,15 @@ final class CodingStandard implements Trigger
         $this->iteration = $iteration;
     }
 
-    public function __invoke(Activity $activity, Console $console): Console
-    {
+    public function __invoke(
+        Activity $activity,
+        Console $console,
+        Set $triggers,
+    ): Console {
+        if (!$triggers->contains(Triggers::codingStandard)) {
+            return $console;
+        }
+
         return match ($activity->type()) {
             Type::sourcesModified => $this->attempt($console),
             Type::testsModified => $this->attempt($console),

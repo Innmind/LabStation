@@ -8,6 +8,7 @@ use Innmind\LabStation\{
     Activity,
 };
 use Innmind\CLI\Console;
+use Innmind\Immutable\Set;
 
 final class All implements Trigger
 {
@@ -22,10 +23,13 @@ final class All implements Trigger
         $this->triggers = $triggers;
     }
 
-    public function __invoke(Activity $activity, Console $console): Console
-    {
+    public function __invoke(
+        Activity $activity,
+        Console $console,
+        Set $triggers,
+    ): Console {
         foreach ($this->triggers as $trigger) {
-            $console = $trigger($activity, $console);
+            $console = $trigger($activity, $console, $triggers);
         }
 
         return $console;

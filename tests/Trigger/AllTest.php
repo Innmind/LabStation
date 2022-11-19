@@ -15,6 +15,7 @@ use Innmind\CLI\{
     Command\Arguments,
     Command\Options,
 };
+use Innmind\Immutable\Set;
 use PHPUnit\Framework\TestCase;
 
 class AllTest extends TestCase
@@ -31,6 +32,7 @@ class AllTest extends TestCase
             $trigger2 = $this->createMock(Trigger::class),
             $trigger3 = $this->createMock(Trigger::class),
         );
+        $triggers = Set::of();
         $activity = new Activity(Type::start);
         $console = Console::of(
             $this->createMock(Environment::class),
@@ -40,19 +42,19 @@ class AllTest extends TestCase
         $trigger1
             ->expects($this->once())
             ->method('__invoke')
-            ->with($activity, $console)
+            ->with($activity, $console, $triggers)
             ->willReturn($console);
         $trigger2
             ->expects($this->once())
             ->method('__invoke')
-            ->with($activity, $console)
+            ->with($activity, $console, $triggers)
             ->willReturn($console);
         $trigger3
             ->expects($this->once())
             ->method('__invoke')
-            ->with($activity, $console)
+            ->with($activity, $console, $triggers)
             ->willReturn($console);
 
-        $this->assertSame($console, $trigger($activity, $console));
+        $this->assertSame($console, $trigger($activity, $console, $triggers));
     }
 }

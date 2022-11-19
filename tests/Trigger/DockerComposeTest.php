@@ -6,6 +6,7 @@ namespace Tests\Innmind\LabStation\Trigger;
 use Innmind\LabStation\{
     Trigger\DockerCompose,
     Trigger,
+    Triggers,
     Activity,
     Activity\Type,
 };
@@ -30,6 +31,7 @@ use Innmind\Url\Path;
 use Innmind\Immutable\{
     Either,
     SideEffect,
+    Set,
 };
 use PHPUnit\Framework\TestCase;
 
@@ -67,6 +69,7 @@ class DockerComposeTest extends TestCase
         $this->assertSame($console, $trigger(
             new Activity(Type::sourcesModified),
             $console,
+            Set::of(Triggers::dockerCompose),
         ));
     }
 
@@ -99,7 +102,47 @@ class DockerComposeTest extends TestCase
         $this->assertSame($console, $trigger(
             new Activity(Type::start),
             $console,
+            Set::of(Triggers::dockerCompose),
         ));
+    }
+
+    public function testDoNothingWhenTriggerNotEnabled()
+    {
+        $trigger = new DockerCompose(
+            $filesystem = $this->createMock(Filesystem::class),
+            $processes = $this->createMock(Processes::class),
+        );
+        $filesystem
+            ->expects($this->never())
+            ->method('mount');
+        $processes
+            ->expects($this->never())
+            ->method('execute');
+        $console = Console::of(
+            Environment\InMemory::of(
+                [],
+                true,
+                [],
+                [],
+                '/path/to/project/vendor/package',
+            ),
+            new Arguments,
+            new Options,
+        );
+
+        $console = $trigger(
+            new Activity(Type::start),
+            $console,
+            Set::of(),
+        );
+        $this->assertSame(
+            [],
+            $console->environment()->outputs(),
+        );
+        $this->assertSame(
+            [],
+            $console->environment()->errors(),
+        );
     }
 
     public function testStartDockerCompose()
@@ -148,6 +191,7 @@ class DockerComposeTest extends TestCase
         $this->assertSame($console, $trigger(
             new Activity(Type::start),
             $console,
+            Set::of(Triggers::dockerCompose),
         ));
     }
 }
