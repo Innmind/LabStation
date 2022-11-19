@@ -5,6 +5,7 @@ namespace Innmind\LabStation\Trigger;
 
 use Innmind\LabStation\{
     Trigger,
+    Triggers,
     Activity,
     Activity\Type,
 };
@@ -20,6 +21,7 @@ use Innmind\Server\Control\Server\{
 use Innmind\Immutable\{
     Map,
     Str,
+    Set,
 };
 
 final class ComposerUpdate implements Trigger
@@ -31,8 +33,15 @@ final class ComposerUpdate implements Trigger
         $this->processes = $processes;
     }
 
-    public function __invoke(Activity $activity, Console $console): Console
-    {
+    public function __invoke(
+        Activity $activity,
+        Console $console,
+        Set $triggers,
+    ): Console {
+        if (!$triggers->contains(Triggers::composerUpdate)) {
+            return $console;
+        }
+
         return match ($activity->type()) {
             Type::start => $this->ask($console),
             default => $console,

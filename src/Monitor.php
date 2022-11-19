@@ -18,6 +18,7 @@ use Innmind\CLI\Console;
 use Innmind\Immutable\{
     Maybe,
     Str,
+    Set,
 };
 
 final class Monitor
@@ -52,7 +53,10 @@ final class Monitor
         $this->agents = $agents;
     }
 
-    public function __invoke(Console $console): Console
+    /**
+     * @param Set<Triggers> $triggers
+     */
+    public function __invoke(Console $console, Set $triggers): Console
     {
         $project = $console->workingDirectory();
         $manager = $this->manager;
@@ -66,7 +70,7 @@ final class Monitor
         return $manager
             ->start()
             ->maybe()
-            ->flatMap(fn($agents) => $this->start($agents, $console))
+            ->flatMap(fn($agents) => $this->start($agents, $console, $triggers))
             ->match(
                 static fn($console) => $console
                     ->error(Str::of("Terminated\n"))
@@ -78,21 +82,26 @@ final class Monitor
     }
 
     /**
+     * @param Set<Triggers> $triggers
+     *
      * @return Maybe<Console>
      */
-    private function start(Running $agents, Console $console): Maybe
-    {
-        $console = ($this->trigger)(new Activity(Type::start), $console);
+    private function start(
+        Running $agents,
+        Console $console,
+        Set $triggers,
+    ): Maybe {
+        $console = ($this->trigger)(new Activity(Type::start), $console, $triggers);
 
         $server = $this->ipc->listen($this->name);
 
         /** @psalm-suppress InvalidArgument */
         return $server(
             $console,
-            function($message, $continuation, Console $console) {
+            function($message, $continuation, Console $console) use ($triggers) {
                 $activity = $this->protocol->decode($message);
                 $this->iteration->start();
-                $console = ($this->trigger)($activity, $console);
+                $console = ($this->trigger)($activity, $console, $triggers);
                 $console = $this->iteration->end($console);
 
                 return $continuation->continue($console);

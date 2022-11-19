@@ -6,6 +6,7 @@ namespace Tests\Innmind\LabStation\Trigger;
 use Innmind\LabStation\{
     Trigger\Psalm,
     Trigger,
+    Triggers,
     Activity,
     Activity\Type,
     Iteration,
@@ -36,6 +37,7 @@ use Innmind\Immutable\{
     Either,
     SideEffect,
     Map,
+    Set,
 };
 use PHPUnit\Framework\TestCase;
 
@@ -72,6 +74,7 @@ class PsalmTest extends TestCase
         $this->assertSame($console, $trigger(
             new Activity(Type::start),
             $console,
+            Set::of(Triggers::psalm),
         ));
     }
 
@@ -104,7 +107,48 @@ class PsalmTest extends TestCase
         $this->assertSame($console, $trigger(
             new Activity(Type::sourcesModified),
             $console,
+            Set::of(Triggers::psalm),
         ));
+    }
+
+    public function testDoNothingWhenTriggerNotEnabled()
+    {
+        $trigger = new Psalm(
+            $processes = $this->createMock(Processes::class),
+            $filesystem = $this->createMock(Filesystem::class),
+            new Iteration,
+        );
+        $filesystem
+            ->expects($this->never())
+            ->method('mount');
+        $processes
+            ->expects($this->never())
+            ->method('execute');
+        $console = Console::of(
+            Environment\InMemory::of(
+                [],
+                true,
+                [],
+                [],
+                '/somewhere',
+            ),
+            new Arguments,
+            new Options,
+        );
+
+        $console = $trigger(
+            new Activity(Type::sourcesModified),
+            $console,
+            Set::of(),
+        );
+        $this->assertSame(
+            [],
+            $console->environment()->outputs(),
+        );
+        $this->assertSame(
+            [],
+            $console->environment()->errors(),
+        );
     }
 
     public function testTriggerTestsSuiteWhenSourcesModified()
@@ -176,6 +220,7 @@ class PsalmTest extends TestCase
         $console = $trigger(
             new Activity(Type::sourcesModified),
             $console,
+            Set::of(Triggers::psalm),
         );
         $console = $iteration->end($console);
         $this->assertSame(
@@ -249,6 +294,7 @@ class PsalmTest extends TestCase
         $console = $trigger(
             new Activity(Type::sourcesModified),
             $console,
+            Set::of(Triggers::psalm),
         );
         $console = $iteration->end($console);
         $this->assertSame([], $console->environment()->outputs());
@@ -323,6 +369,7 @@ class PsalmTest extends TestCase
         $console = $trigger(
             new Activity(Type::testsModified),
             $console,
+            Set::of(Triggers::psalm),
         );
         $console = $iteration->end($console);
         $this->assertSame(
@@ -399,6 +446,7 @@ class PsalmTest extends TestCase
         $console = $trigger(
             new Activity(Type::sourcesModified),
             $console,
+            Set::of(Triggers::psalm),
         );
         $console = $iteration->end($console);
         $this->assertSame([], $console->environment()->outputs());
@@ -456,6 +504,7 @@ class PsalmTest extends TestCase
         $console = $trigger(
             new Activity(Type::sourcesModified),
             $console,
+            Set::of(Triggers::psalm),
         );
         $console = $iteration->end($console);
         $this->assertSame(["\033[2J\033[H"], $console->environment()->outputs());

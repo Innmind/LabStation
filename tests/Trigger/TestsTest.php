@@ -6,6 +6,7 @@ namespace Tests\Innmind\LabStation\Trigger;
 use Innmind\LabStation\{
     Trigger\Tests,
     Trigger,
+    Triggers,
     Activity,
     Activity\Type,
     Iteration,
@@ -34,6 +35,7 @@ use Innmind\Immutable\{
     Either,
     SideEffect,
     Map,
+    Set as ISet,
 };
 use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
@@ -76,7 +78,57 @@ class TestsTest extends TestCase
         $this->assertSame($console, $trigger(
             new Activity(Type::start),
             $console,
+            ISet::of(Triggers::tests),
         ));
+    }
+
+    public function testDoNothingWhenTriggerNotEnabled()
+    {
+        $this
+            ->forAll(Set\Elements::of(
+                Type::sourcesModified,
+                Type::testsModified,
+                Type::fixturesModified,
+                Type::propertiesModified,
+            ))
+            ->then(function($type) {
+                $trigger = new Tests(
+                    $filesystem = $this->createMock(Filesystem::class),
+                    $processes = $this->createMock(Processes::class),
+                    new Iteration,
+                );
+                $filesystem
+                    ->expects($this->never())
+                    ->method('mount');
+                $processes
+                    ->expects($this->never())
+                    ->method('execute');
+                $console = Console::of(
+                    Environment\InMemory::of(
+                        [],
+                        true,
+                        [],
+                        [],
+                        '/somewhere',
+                    ),
+                    new Arguments,
+                    new Options,
+                );
+
+                $console = $trigger(
+                    new Activity($type),
+                    $console,
+                    ISet::of(),
+                );
+                $this->assertSame(
+                    [],
+                    $console->environment()->outputs(),
+                );
+                $this->assertSame(
+                    [],
+                    $console->environment()->errors(),
+                );
+            });
     }
 
     public function testTriggerTestsSuiteWhenActivity()
@@ -156,6 +208,7 @@ class TestsTest extends TestCase
                 $console = $trigger(
                     new Activity($type),
                     $console,
+                    ISet::of(Triggers::tests),
                 );
                 $console = $iteration->end($console);
                 $this->assertSame(
@@ -208,6 +261,7 @@ class TestsTest extends TestCase
                 $console = $trigger(
                     new Activity($type),
                     $console,
+                    ISet::of(Triggers::tests),
                 );
                 $console = $iteration->end($console);
                 $this->assertSame(
@@ -284,6 +338,7 @@ class TestsTest extends TestCase
         $console = $trigger(
             new Activity(Type::sourcesModified),
             $console,
+            ISet::of(Triggers::tests),
         );
         $console = $iteration->end($console);
         $this->assertSame([], $console->environment()->outputs());
@@ -352,6 +407,7 @@ class TestsTest extends TestCase
         $console = $trigger(
             new Activity(Type::sourcesModified),
             $console,
+            ISet::of(Triggers::tests),
         );
         $console = $iteration->end($console);
         $this->assertSame([], $console->environment()->outputs());
@@ -408,6 +464,7 @@ class TestsTest extends TestCase
         $console = $trigger(
             new Activity(Type::sourcesModified),
             $console,
+            ISet::of(Triggers::tests),
         );
         $console = $iteration->end($console);
         $this->assertSame(["\033[2J\033[H"], $console->environment()->outputs());
