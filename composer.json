@@ -22,7 +22,7 @@
         "innmind/json": "^1.1",
         "innmind/ipc": "~4.0",
         "innmind/process-manager": "~4.0",
-        "innmind/server-control": "~4.2",
+        "innmind/server-control": "~4.2|~5.0",
         "innmind/immutable": "~4.4"
     },
     "autoload": {
