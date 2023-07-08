@@ -36,6 +36,11 @@ function bootstrap(OperatingSystem $os): Commands
                         $os->filesystem(),
                         $os->control()->processes(),
                     ),
+                    new Trigger\BlackBox(
+                        $os->filesystem(),
+                        $os->control()->processes(),
+                        $iteration,
+                    ),
                     new Trigger\Tests(
                         $os->filesystem(),
                         $os->control()->processes(),
