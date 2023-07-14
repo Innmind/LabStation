@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- `fixtures` and `properties` watcher are now started
+
 ### Fixed
 
 - Fix watching `fixtures` and `properties` directories
