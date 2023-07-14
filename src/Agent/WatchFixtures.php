@@ -41,7 +41,7 @@ final class WatchFixtures implements Agent
 
     public function __invoke(Path $project): void
     {
-        $fixtures = $project->resolve(Path::of('fixtures/'));
+        $fixtures = $project->resolve(Path::of('fixtures'));
 
         if (!$this->filesystem->contains($fixtures)) {
             return;

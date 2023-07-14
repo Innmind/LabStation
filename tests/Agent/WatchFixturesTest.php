@@ -73,12 +73,12 @@ class WatchFixturesTest extends TestCase
         $filesystem
             ->expects($this->once())
             ->method('contains')
-            ->with(Path::of('/vendor/package/fixtures/'))
+            ->with(Path::of('/vendor/package/fixtures'))
             ->willReturn(true);
         $filesystem
             ->expects($this->once())
             ->method('watch')
-            ->with(Path::of('/vendor/package/fixtures/'))
+            ->with(Path::of('/vendor/package/fixtures'))
             ->willReturn($ping = $this->createMock(Ping::class));
         $ping
             ->expects($this->once())
@@ -111,7 +111,7 @@ class WatchFixturesTest extends TestCase
         $filesystem
             ->expects($this->once())
             ->method('contains')
-            ->with(Path::of('/vendor/package/fixtures/'))
+            ->with(Path::of('/vendor/package/fixtures'))
             ->willReturn(false);
         $filesystem
             ->expects($this->never())
