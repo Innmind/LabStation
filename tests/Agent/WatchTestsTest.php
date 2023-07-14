@@ -72,6 +72,11 @@ class WatchTestsTest extends TestCase
             ->willReturn(Maybe::just(new SideEffect));
         $filesystem
             ->expects($this->once())
+            ->method('contains')
+            ->with(Path::of('/vendor/package/tests'))
+            ->willReturn(true);
+        $filesystem
+            ->expects($this->once())
             ->method('watch')
             ->with(Path::of('/vendor/package/tests'))
             ->willReturn($ping = $this->createMock(Ping::class));
@@ -84,6 +89,33 @@ class WatchTestsTest extends TestCase
                 return true;
             }))
             ->willReturn(Either::right($ipc));
+
+        $this->assertNull($agent($project));
+    }
+
+    public function testDoesntWatchWhenTheFolderDoesntExist()
+    {
+        $agent = new WatchTests(
+            $protocol = $this->createMock(Protocol::class),
+            $filesystem = $this->createMock(Filesystem::class),
+            $ipc = $this->createMock(IPC::class),
+            $name = Name::of('foo'),
+        );
+        $project = Path::of('/vendor/package/');
+        $protocol
+            ->expects($this->never())
+            ->method('encode');
+        $ipc
+            ->expects($this->never())
+            ->method('get');
+        $filesystem
+            ->expects($this->once())
+            ->method('contains')
+            ->with(Path::of('/vendor/package/tests'))
+            ->willReturn(false);
+        $filesystem
+            ->expects($this->never())
+            ->method('watch');
 
         $this->assertNull($agent($project));
     }

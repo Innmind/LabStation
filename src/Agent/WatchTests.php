@@ -43,6 +43,10 @@ final class WatchTests implements Agent
     {
         $tests = $project->resolve(Path::of('tests'));
 
+        if (!$this->filesystem->contains($tests)) {
+            return;
+        }
+
         $this->filesystem->watch($tests)(
             $this->ipc,
             fn(IPC $ipc) => $ipc

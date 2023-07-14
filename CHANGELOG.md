@@ -13,6 +13,7 @@
 ### Fixed
 
 - Fix watching `fixtures` and `properties` directories
+- Fix trying to watch the `tests` directory when it doesn't exist
 
 ## 3.3.0 - 2023-07-08
 
