@@ -20,7 +20,7 @@ use Innmind\Immutable\{
     Either,
 };
 
-final class WatchFixtures implements Agent
+final class WatchProofs implements Agent
 {
     private Protocol $protocol;
     private Filesystem $filesystem;
@@ -41,18 +41,18 @@ final class WatchFixtures implements Agent
 
     public function __invoke(Path $project): void
     {
-        $fixtures = $project->resolve(Path::of('fixtures'));
+        $proofs = $project->resolve(Path::of('proofs'));
 
-        if (!$this->filesystem->contains($fixtures)) {
+        if (!$this->filesystem->contains($proofs)) {
             return;
         }
 
-        $this->filesystem->watch($fixtures)(
+        $this->filesystem->watch($proofs)(
             $this->ipc,
             fn(IPC $ipc) => $ipc
                 ->get($this->monitor)
                 ->flatMap(fn($process) => $process->send(Sequence::of(
-                    $this->protocol->encode(new Activity(Type::fixturesModified)),
+                    $this->protocol->encode(new Activity(Type::testsModified)),
                 )))
                 ->flatMap(static fn($process) => $process->close())
                 ->either()

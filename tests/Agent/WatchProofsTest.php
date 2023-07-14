@@ -4,7 +4,7 @@ declare(strict_types = 1);
 namespace Tests\Innmind\LabStation\Agent;
 
 use Innmind\LabStation\{
-    Agent\WatchFixtures,
+    Agent\WatchProofs,
     Agent,
     Protocol,
     Activity,
@@ -27,13 +27,13 @@ use Innmind\Immutable\{
 };
 use PHPUnit\Framework\TestCase;
 
-class WatchFixturesTest extends TestCase
+class WatchProofsTest extends TestCase
 {
     public function testInterface()
     {
         $this->assertInstanceOf(
             Agent::class,
-            new WatchFixtures(
+            new WatchProofs(
                 $this->createMock(Protocol::class),
                 $this->createMock(Filesystem::class),
                 $this->createMock(IPC::class),
@@ -44,7 +44,7 @@ class WatchFixturesTest extends TestCase
 
     public function testSendMessageWhenSourcesAreModified()
     {
-        $agent = new WatchFixtures(
+        $agent = new WatchProofs(
             $protocol = $this->createMock(Protocol::class),
             $filesystem = $this->createMock(Filesystem::class),
             $ipc = $this->createMock(IPC::class),
@@ -54,7 +54,7 @@ class WatchFixturesTest extends TestCase
         $protocol
             ->expects($this->once())
             ->method('encode')
-            ->with(new Activity(Type::fixturesModified))
+            ->with(new Activity(Type::testsModified))
             ->willReturn($message = $this->createMock(Message::class));
         $ipc
             ->expects($this->once())
@@ -73,12 +73,12 @@ class WatchFixturesTest extends TestCase
         $filesystem
             ->expects($this->once())
             ->method('contains')
-            ->with(Path::of('/vendor/package/fixtures'))
+            ->with(Path::of('/vendor/package/proofs'))
             ->willReturn(true);
         $filesystem
             ->expects($this->once())
             ->method('watch')
-            ->with(Path::of('/vendor/package/fixtures'))
+            ->with(Path::of('/vendor/package/proofs'))
             ->willReturn($ping = $this->createMock(Ping::class));
         $ping
             ->expects($this->once())
@@ -95,7 +95,7 @@ class WatchFixturesTest extends TestCase
 
     public function testDoesntWatchWhenTheFolderDoesntExist()
     {
-        $agent = new WatchFixtures(
+        $agent = new WatchProofs(
             $protocol = $this->createMock(Protocol::class),
             $filesystem = $this->createMock(Filesystem::class),
             $ipc = $this->createMock(IPC::class),
@@ -111,7 +111,7 @@ class WatchFixturesTest extends TestCase
         $filesystem
             ->expects($this->once())
             ->method('contains')
-            ->with(Path::of('/vendor/package/fixtures'))
+            ->with(Path::of('/vendor/package/proofs'))
             ->willReturn(false);
         $filesystem
             ->expects($this->never())

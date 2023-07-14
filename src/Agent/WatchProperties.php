@@ -41,7 +41,7 @@ final class WatchProperties implements Agent
 
     public function __invoke(Path $project): void
     {
-        $properties = $project->resolve(Path::of('properties/'));
+        $properties = $project->resolve(Path::of('properties'));
 
         if (!$this->filesystem->contains($properties)) {
             return;

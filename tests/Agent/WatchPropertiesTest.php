@@ -73,12 +73,12 @@ class WatchPropertiesTest extends TestCase
         $filesystem
             ->expects($this->once())
             ->method('contains')
-            ->with(Path::of('/vendor/package/properties/'))
+            ->with(Path::of('/vendor/package/properties'))
             ->willReturn(true);
         $filesystem
             ->expects($this->once())
             ->method('watch')
-            ->with(Path::of('/vendor/package/properties/'))
+            ->with(Path::of('/vendor/package/properties'))
             ->willReturn($ping = $this->createMock(Ping::class));
         $ping
             ->expects($this->once())
@@ -111,7 +111,7 @@ class WatchPropertiesTest extends TestCase
         $filesystem
             ->expects($this->once())
             ->method('contains')
-            ->with(Path::of('/vendor/package/properties/'))
+            ->with(Path::of('/vendor/package/properties'))
             ->willReturn(false);
         $filesystem
             ->expects($this->never())
