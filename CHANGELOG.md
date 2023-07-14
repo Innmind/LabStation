@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Add agent to watch `proofs` directory to trigger tests
+
 ### Changed
 
 - `fixtures` and `properties` watcher are now started

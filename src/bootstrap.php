@@ -72,6 +72,12 @@ function bootstrap(OperatingSystem $os): Commands
                     $ipc,
                     $monitor,
                 ),
+                new Agent\WatchProofs(
+                    $protocol,
+                    $os->filesystem(),
+                    $ipc,
+                    $monitor,
+                ),
                 new Agent\WatchFixtures(
                     $protocol,
                     $os->filesystem(),
