@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.5.0 - 2023-07-15
+
+### Changed
+
+- All triggers redirect errors to the standard output (as `php://stderr` regularly is no longer writable)
+
 ## 3.4.0 - 2023-07-14
 
 ### Added

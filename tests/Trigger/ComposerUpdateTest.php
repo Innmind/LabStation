@@ -143,11 +143,11 @@ class ComposerUpdateTest extends TestCase
             Set::of(Triggers::composerUpdate),
         );
         $this->assertSame(
-            ['Update dependencies? [Y/n] ', 'some output', "Dependencies updated!\n"],
+            ['Update dependencies? [Y/n] ', 'some output', 'some error', "Dependencies updated!\n"],
             $console->environment()->outputs(),
         );
         $this->assertSame(
-            ['some error'],
+            [],
             $console->environment()->errors(),
         );
     }

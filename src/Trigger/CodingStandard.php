@@ -14,7 +14,6 @@ use Innmind\CLI\Console;
 use Innmind\Server\Control\Server\{
     Processes,
     Command,
-    Process\Output,
 };
 use Innmind\OperatingSystem\Filesystem;
 use Innmind\Filesystem\Name;
@@ -97,10 +96,7 @@ final class CodingStandard implements Trigger
             ->output()
             ->reduce(
                 $console,
-                static fn(Console $console, $line, $type) => match ($type) {
-                    Output\Type::output => $console->output($line),
-                    Output\Type::error => $console->error($line),
-                },
+                static fn(Console $console, $line) => $console->output($line),
             );
         $successful = $process->wait()->match(
             static fn() => true,

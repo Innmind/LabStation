@@ -224,11 +224,11 @@ class PsalmTest extends TestCase
         );
         $console = $iteration->end($console);
         $this->assertSame(
-            ['some output', "\033[2J\033[H"],
+            ['some output', 'some error', "\033[2J\033[H"],
             $console->environment()->outputs(),
         );
         $this->assertSame(
-            ['some error'],
+            [],
             $console->environment()->errors(),
         );
     }
@@ -373,11 +373,11 @@ class PsalmTest extends TestCase
         );
         $console = $iteration->end($console);
         $this->assertSame(
-            ['some output', "\033[2J\033[H"],
+            ['some output', 'some error', "\033[2J\033[H"],
             $console->environment()->outputs(),
         );
         $this->assertSame(
-            ['some error'],
+            [],
             $console->environment()->errors(),
         );
     }
