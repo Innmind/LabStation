@@ -83,10 +83,7 @@ final class ComposerUpdate implements Trigger
             ->output()
             ->reduce(
                 $console,
-                static fn(Console $console, $line, $type) => match ($type) {
-                    Output\Type::output => $console->output($line),
-                    Output\Type::error => $console->error($line),
-                },
+                static fn(Console $console, $line) => $console->output($line),
             )
             ->output(Str::of("Dependencies updated!\n"));
     }
