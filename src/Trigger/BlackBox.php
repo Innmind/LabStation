@@ -73,7 +73,11 @@ final class BlackBox implements Trigger
         /** @var Map<non-empty-string, string> */
         $variables = $console
             ->variables()
-            ->filter(static fn($key) => $key === 'PATH');
+            ->filter(static fn($key) => \in_array(
+                $key,
+                ['PATH', 'LC_TERMINAL'],
+                true,
+            ));
 
         $process = $this
             ->processes

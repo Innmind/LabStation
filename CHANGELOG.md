@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.6.0 - 2023-09-02
+
+### Added
+
+- Support BlackBox setting marks on failures
+
 ## 3.5.0 - 2023-07-15
 
 ### Changed
