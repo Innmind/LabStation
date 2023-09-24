@@ -168,25 +168,35 @@ class CodingStandardTest extends TestCase
             ->method('mount')
             ->with(Path::of('/somewhere/'))
             ->willReturn($adapter);
+        $cs = $this->createMock(Process::class);
+        $say = $this->createMock(Process::class);
         $processes
-            ->expects($this->exactly(2))
+            ->expects($matcher = $this->exactly(2))
             ->method('execute')
-            ->withConsecutive(
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'" &&
-                        '/somewhere/' === $command->workingDirectory()->match(
-                            static fn($path) => $path->toString(),
-                            static fn() => null,
-                        );
-                })],
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "say 'Coding Standard : right'";
-                })],
-            )
-            ->will($this->onConsecutiveCalls(
-                $cs = $this->createMock(Process::class),
-                $say = $this->createMock(Process::class),
-            ));
+            ->willReturnCallback(function($command) use ($matcher, $cs, $say) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertSame(
+                        "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
+                        $command->toString(),
+                    ),
+                    2 => $this->assertSame(
+                        "say 'Coding Standard : right'",
+                        $command->toString(),
+                    ),
+                };
+
+                if ($matcher->numberOfInvocations() === 1) {
+                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                        static fn($path) => $path->toString(),
+                        static fn() => null,
+                    ));
+                }
+
+                return match ($matcher->numberOfInvocations()) {
+                    1 => $cs,
+                    2 => $say,
+                };
+            });
         $cs
             ->expects($this->once())
             ->method('output')
@@ -248,20 +258,35 @@ class CodingStandardTest extends TestCase
             ->method('mount')
             ->with(Path::of('/somewhere/'))
             ->willReturn($adapter);
+        $cs = $this->createMock(Process::class);
+        $say = $this->createMock(Process::class);
         $processes
-            ->expects($this->exactly(2))
+            ->expects($matcher = $this->exactly(2))
             ->method('execute')
-            ->withConsecutive([$this->callback(static function($command): bool {
-                return $command->toString() === "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'" &&
-                    '/somewhere/' === $command->workingDirectory()->match(
+            ->willReturnCallback(function($command) use ($matcher, $cs, $say) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertSame(
+                        "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
+                        $command->toString(),
+                    ),
+                    2 => $this->assertSame(
+                        "say 'Coding Standard : right'",
+                        $command->toString(),
+                    ),
+                };
+
+                if ($matcher->numberOfInvocations() === 1) {
+                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
                         static fn($path) => $path->toString(),
                         static fn() => null,
-                    );
-            })])
-            ->will($this->onConsecutiveCalls(
-                $cs = $this->createMock(Process::class),
-                $say = $this->createMock(Process::class),
-            ));
+                    ));
+                }
+
+                return match ($matcher->numberOfInvocations()) {
+                    1 => $cs,
+                    2 => $say,
+                };
+            });
         $cs
             ->expects($this->once())
             ->method('output')
@@ -314,25 +339,35 @@ class CodingStandardTest extends TestCase
             ->method('mount')
             ->with(Path::of('/somewhere/'))
             ->willReturn($adapter);
+        $cs = $this->createMock(Process::class);
+        $say = $this->createMock(Process::class);
         $processes
-            ->expects($this->exactly(2))
+            ->expects($matcher = $this->exactly(2))
             ->method('execute')
-            ->withConsecutive(
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'" &&
-                        '/somewhere/' === $command->workingDirectory()->match(
-                            static fn($path) => $path->toString(),
-                            static fn() => null,
-                        );
-                })],
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "say 'Coding Standard : right'";
-                })],
-            )
-            ->will($this->onConsecutiveCalls(
-                $cs = $this->createMock(Process::class),
-                $say = $this->createMock(Process::class),
-            ));
+            ->willReturnCallback(function($command) use ($matcher, $cs, $say) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertSame(
+                        "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
+                        $command->toString(),
+                    ),
+                    2 => $this->assertSame(
+                        "say 'Coding Standard : right'",
+                        $command->toString(),
+                    ),
+                };
+
+                if ($matcher->numberOfInvocations() === 1) {
+                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                        static fn($path) => $path->toString(),
+                        static fn() => null,
+                    ));
+                }
+
+                return match ($matcher->numberOfInvocations()) {
+                    1 => $cs,
+                    2 => $say,
+                };
+            });
         $cs
             ->expects($this->once())
             ->method('output')
@@ -394,25 +429,35 @@ class CodingStandardTest extends TestCase
             ->method('mount')
             ->with(Path::of('/somewhere/'))
             ->willReturn($adapter);
+        $cs = $this->createMock(Process::class);
+        $say = $this->createMock(Process::class);
         $processes
-            ->expects($this->exactly(2))
+            ->expects($matcher = $this->exactly(2))
             ->method('execute')
-            ->withConsecutive(
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run'" &&
-                        '/somewhere/' === $command->workingDirectory()->match(
-                            static fn($path) => $path->toString(),
-                            static fn() => null,
-                        );
-                })],
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "say 'Coding Standard : right'";
-                })],
-            )
-            ->will($this->onConsecutiveCalls(
-                $cs = $this->createMock(Process::class),
-                $say = $this->createMock(Process::class),
-            ));
+            ->willReturnCallback(function($command) use ($matcher, $cs, $say) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertSame(
+                        "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run'",
+                        $command->toString(),
+                    ),
+                    2 => $this->assertSame(
+                        "say 'Coding Standard : right'",
+                        $command->toString(),
+                    ),
+                };
+
+                if ($matcher->numberOfInvocations() === 1) {
+                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                        static fn($path) => $path->toString(),
+                        static fn() => null,
+                    ));
+                }
+
+                return match ($matcher->numberOfInvocations()) {
+                    1 => $cs,
+                    2 => $say,
+                };
+            });
         $cs
             ->expects($this->once())
             ->method('output')
@@ -474,25 +519,35 @@ class CodingStandardTest extends TestCase
             ->method('mount')
             ->with(Path::of('/somewhere/'))
             ->willReturn($adapter);
+        $cs = $this->createMock(Process::class);
+        $say = $this->createMock(Process::class);
         $processes
-            ->expects($this->exactly(2))
+            ->expects($matcher = $this->exactly(2))
             ->method('execute')
-            ->withConsecutive(
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'" &&
-                        '/somewhere/' === $command->workingDirectory()->match(
-                            static fn($path) => $path->toString(),
-                            static fn() => null,
-                        );
-                })],
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "say 'Coding Standard : wrong'";
-                })],
-            )
-            ->will($this->onConsecutiveCalls(
-                $cs = $this->createMock(Process::class),
-                $say = $this->createMock(Process::class),
-            ));
+            ->willReturnCallback(function($command) use ($matcher, $cs, $say) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertSame(
+                        "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
+                        $command->toString(),
+                    ),
+                    2 => $this->assertSame(
+                        "say 'Coding Standard : wrong'",
+                        $command->toString(),
+                    ),
+                };
+
+                if ($matcher->numberOfInvocations() === 1) {
+                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                        static fn($path) => $path->toString(),
+                        static fn() => null,
+                    ));
+                }
+
+                return match ($matcher->numberOfInvocations()) {
+                    1 => $cs,
+                    2 => $say,
+                };
+            });
         $cs
             ->expects($this->once())
             ->method('output')

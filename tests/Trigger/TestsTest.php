@@ -155,25 +155,35 @@ class TestsTest extends TestCase
                     ->expects($this->once())
                     ->method('mount')
                     ->willReturn($adapter);
+                $tests = $this->createMock(Process::class);
+                $say = $this->createMock(Process::class);
                 $processes
-                    ->expects($this->exactly(2))
+                    ->expects($matcher = $this->exactly(2))
                     ->method('execute')
-                    ->withConsecutive(
-                        [$this->callback(static function($command): bool {
-                            return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
-                                '/somewhere/' === $command->workingDirectory()->match(
-                                    static fn($path) => $path->toString(),
-                                    static fn() => null,
-                                );
-                        })],
-                        [$this->callback(static function($command): bool {
-                            return $command->toString() === "say 'PHPUnit : ok'";
-                        })],
-                    )
-                    ->will($this->onConsecutiveCalls(
-                        $tests = $this->createMock(Process::class),
-                        $say = $this->createMock(Process::class),
-                    ));
+                    ->willReturnCallback(function($command) use ($matcher, $tests, $say) {
+                        match ($matcher->numberOfInvocations()) {
+                            1 => $this->assertSame(
+                                "vendor/bin/phpunit '--colors=always' '--fail-on-warning'",
+                                $command->toString(),
+                            ),
+                            2 => $this->assertSame(
+                                "say 'PHPUnit : ok'",
+                                $command->toString(),
+                            ),
+                        };
+
+                        if ($matcher->numberOfInvocations() === 1) {
+                            $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                                static fn($path) => $path->toString(),
+                                static fn() => null,
+                            ));
+                        }
+
+                        return match ($matcher->numberOfInvocations()) {
+                            1 => $tests,
+                            2 => $say,
+                        };
+                    });
                 $tests
                     ->expects($this->once())
                     ->method('output')
@@ -291,25 +301,35 @@ class TestsTest extends TestCase
             ->expects($this->once())
             ->method('mount')
             ->willReturn($adapter);
+        $tests = $this->createMock(Process::class);
+        $say = $this->createMock(Process::class);
         $processes
-            ->expects($this->exactly(2))
+            ->expects($matcher = $this->exactly(2))
             ->method('execute')
-            ->withConsecutive(
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
-                        '/somewhere/' === $command->workingDirectory()->match(
-                            static fn($path) => $path->toString(),
-                            static fn() => null,
-                        );
-                })],
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "say 'PHPUnit : ok'";
-                })],
-            )
-            ->will($this->onConsecutiveCalls(
-                $tests = $this->createMock(Process::class),
-                $say = $this->createMock(Process::class),
-            ));
+            ->willReturnCallback(function($command) use ($matcher, $tests, $say) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertSame(
+                        "vendor/bin/phpunit '--colors=always' '--fail-on-warning'",
+                        $command->toString(),
+                    ),
+                    2 => $this->assertSame(
+                        "say 'PHPUnit : ok'",
+                        $command->toString(),
+                    ),
+                };
+
+                if ($matcher->numberOfInvocations() === 1) {
+                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                        static fn($path) => $path->toString(),
+                        static fn() => null,
+                    ));
+                }
+
+                return match ($matcher->numberOfInvocations()) {
+                    1 => $tests,
+                    2 => $say,
+                };
+            });
         $tests
             ->expects($this->once())
             ->method('wait')
@@ -360,25 +380,35 @@ class TestsTest extends TestCase
             ->expects($this->once())
             ->method('mount')
             ->willReturn($adapter);
+        $tests = $this->createMock(Process::class);
+        $say = $this->createMock(Process::class);
         $processes
-            ->expects($this->exactly(2))
+            ->expects($matcher = $this->exactly(2))
             ->method('execute')
-            ->withConsecutive(
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "vendor/bin/phpunit '--colors=always' '--fail-on-warning'" &&
-                        '/somewhere/' === $command->workingDirectory()->match(
-                            static fn($path) => $path->toString(),
-                            static fn() => null,
-                        );
-                })],
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "say 'PHPUnit : failing'";
-                })],
-            )
-            ->will($this->onConsecutiveCalls(
-                $tests = $this->createMock(Process::class),
-                $say = $this->createMock(Process::class),
-            ));
+            ->willReturnCallback(function($command) use ($matcher, $tests, $say) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertSame(
+                        "vendor/bin/phpunit '--colors=always' '--fail-on-warning'",
+                        $command->toString(),
+                    ),
+                    2 => $this->assertSame(
+                        "say 'PHPUnit : failing'",
+                        $command->toString(),
+                    ),
+                };
+
+                if ($matcher->numberOfInvocations() === 1) {
+                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                        static fn($path) => $path->toString(),
+                        static fn() => null,
+                    ));
+                }
+
+                return match ($matcher->numberOfInvocations()) {
+                    1 => $tests,
+                    2 => $say,
+                };
+            });
         $tests
             ->expects($this->once())
             ->method('output')

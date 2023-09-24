@@ -168,25 +168,35 @@ class PsalmTest extends TestCase
             ->method('mount')
             ->with(Path::of('/somewhere/'))
             ->willReturn($adapter);
+        $psalm = $this->createMock(Process::class);
+        $say = $this->createMock(Process::class);
         $processes
-            ->expects($this->exactly(2))
+            ->expects($matcher = $this->exactly(2))
             ->method('execute')
-            ->withConsecutive(
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "vendor/bin/psalm '--no-cache'" &&
-                        '/somewhere/' === $command->workingDirectory()->match(
-                            static fn($path) => $path->toString(),
-                            static fn() => null,
-                        );
-                })],
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "say 'Psalm : ok'";
-                })],
-            )
-            ->will($this->onConsecutiveCalls(
-                $psalm = $this->createMock(Process::class),
-                $say = $this->createMock(Process::class),
-            ));
+            ->willReturnCallback(function($command) use ($matcher, $psalm, $say) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertSame(
+                        "vendor/bin/psalm '--no-cache'",
+                        $command->toString(),
+                    ),
+                    2 => $this->assertSame(
+                        "say 'Psalm : ok'",
+                        $command->toString(),
+                    ),
+                };
+
+                if ($matcher->numberOfInvocations() === 1) {
+                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                        static fn($path) => $path->toString(),
+                        static fn() => null,
+                    ));
+                }
+
+                return match ($matcher->numberOfInvocations()) {
+                    1 => $psalm,
+                    2 => $say,
+                };
+            });
         $psalm
             ->expects($this->once())
             ->method('output')
@@ -250,22 +260,35 @@ class PsalmTest extends TestCase
             ->method('mount')
             ->with(Path::of('/somewhere/'))
             ->willReturn($adapter);
+        $psalm = $this->createMock(Process::class);
+        $say = $this->createMock(Process::class);
         $processes
-            ->expects($this->exactly(2))
+            ->expects($matcher = $this->exactly(2))
             ->method('execute')
-            ->withConsecutive(
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "vendor/bin/psalm '--no-cache'" &&
-                        '/somewhere/' === $command->workingDirectory()->match(
-                            static fn($path) => $path->toString(),
-                            static fn() => null,
-                        );
-                })],
-            )
-            ->will($this->onConsecutiveCalls(
-                $psalm = $this->createMock(Process::class),
-                $say = $this->createMock(Process::class),
-            ));
+            ->willReturnCallback(function($command) use ($matcher, $psalm, $say) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertSame(
+                        "vendor/bin/psalm '--no-cache'",
+                        $command->toString(),
+                    ),
+                    2 => $this->assertSame(
+                        "say 'Psalm : ok'",
+                        $command->toString(),
+                    ),
+                };
+
+                if ($matcher->numberOfInvocations() === 1) {
+                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                        static fn($path) => $path->toString(),
+                        static fn() => null,
+                    ));
+                }
+
+                return match ($matcher->numberOfInvocations()) {
+                    1 => $psalm,
+                    2 => $say,
+                };
+            });
         $psalm
             ->expects($this->once())
             ->method('output')
@@ -317,25 +340,35 @@ class PsalmTest extends TestCase
             ->method('mount')
             ->with(Path::of('/somewhere/'))
             ->willReturn($adapter);
+        $psalm = $this->createMock(Process::class);
+        $say = $this->createMock(Process::class);
         $processes
-            ->expects($this->exactly(2))
+            ->expects($matcher = $this->exactly(2))
             ->method('execute')
-            ->withConsecutive(
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "vendor/bin/psalm '--no-cache'" &&
-                        '/somewhere/' === $command->workingDirectory()->match(
-                            static fn($path) => $path->toString(),
-                            static fn() => null,
-                        );
-                })],
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "say 'Psalm : ok'";
-                })],
-            )
-            ->will($this->onConsecutiveCalls(
-                $psalm = $this->createMock(Process::class),
-                $say = $this->createMock(Process::class),
-            ));
+            ->willReturnCallback(function($command) use ($matcher, $psalm, $say) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertSame(
+                        "vendor/bin/psalm '--no-cache'",
+                        $command->toString(),
+                    ),
+                    2 => $this->assertSame(
+                        "say 'Psalm : ok'",
+                        $command->toString(),
+                    ),
+                };
+
+                if ($matcher->numberOfInvocations() === 1) {
+                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                        static fn($path) => $path->toString(),
+                        static fn() => null,
+                    ));
+                }
+
+                return match ($matcher->numberOfInvocations()) {
+                    1 => $psalm,
+                    2 => $say,
+                };
+            });
         $psalm
             ->expects($this->once())
             ->method('output')
@@ -399,25 +432,35 @@ class PsalmTest extends TestCase
             ->method('mount')
             ->with(Path::of('/somewhere/'))
             ->willReturn($adapter);
+        $psalm = $this->createMock(Process::class);
+        $say = $this->createMock(Process::class);
         $processes
-            ->expects($this->exactly(2))
+            ->expects($matcher = $this->exactly(2))
             ->method('execute')
-            ->withConsecutive(
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "vendor/bin/psalm '--no-cache'" &&
-                        '/somewhere/' === $command->workingDirectory()->match(
-                            static fn($path) => $path->toString(),
-                            static fn() => null,
-                        );
-                })],
-                [$this->callback(static function($command): bool {
-                    return $command->toString() === "say 'Psalm : failing'";
-                })],
-            )
-            ->will($this->onConsecutiveCalls(
-                $psalm = $this->createMock(Process::class),
-                $say = $this->createMock(Process::class),
-            ));
+            ->willReturnCallback(function($command) use ($matcher, $psalm, $say) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertSame(
+                        "vendor/bin/psalm '--no-cache'",
+                        $command->toString(),
+                    ),
+                    2 => $this->assertSame(
+                        "say 'Psalm : failing'",
+                        $command->toString(),
+                    ),
+                };
+
+                if ($matcher->numberOfInvocations() === 1) {
+                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                        static fn($path) => $path->toString(),
+                        static fn() => null,
+                    ));
+                }
+
+                return match ($matcher->numberOfInvocations()) {
+                    1 => $psalm,
+                    2 => $say,
+                };
+            });
         $psalm
             ->expects($this->once())
             ->method('output')
