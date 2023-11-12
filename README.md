@@ -14,7 +14,7 @@ Automatisations:
 - Verify the code style (if a `.php_cs.dist` or `.php-cs-fixer.dist.php` file exists) when `src`, `tests`, `proofs`, `fixtures` or `properties` folders are modified
 - Start docker compose when there is a `docker-compose.yml` at the project root
 
-![](example.gif)
+https://github.com/Innmind/LabStation/assets/851425/cbb99153-20db-450a-ac3a-bf68980c9ad1
 
 ## Installation
 
