@@ -134,7 +134,6 @@ class TestsTest extends TestCase
                 Activity::sourcesModified,
                 Activity::testsModified,
                 Activity::fixturesModified,
-                Activity::propertiesModified,
             ))
             ->then(function($type) {
                 $trigger = new Tests(
@@ -248,7 +247,6 @@ class TestsTest extends TestCase
                 Activity::sourcesModified,
                 Activity::testsModified,
                 Activity::fixturesModified,
-                Activity::propertiesModified,
             ))
             ->then(function($type) {
                 $trigger = new Tests(
