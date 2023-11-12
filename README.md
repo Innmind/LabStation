@@ -8,10 +8,10 @@ Development tool to automate certain parts of the dev cycle.
 
 Automatisations:
 - Propose to update dependencies when starting working on the project
-- Launch BlackBox proofs when `src`, `tests`, `fixtures` or `properties` folders are modified
-- Launch PHPUnit tests when `src`, `tests`, `fixtures` or `properties` folders are modified
-- Launch Psalm checks (if a `psalm.xml` exists) when `src` or `tests` folders are modified
-- Verify the code style (if a `.php_cs.dist` or `.php-cs-fixer.dist.php` file exists) when `src`, `tests`, `fixtures` or `properties` folders are modified
+- Launch BlackBox proofs when `src`, `proofs`, `fixtures` or `properties` folders are modified
+- Launch PHPUnit tests when `src`, `tests` or `fixtures` folders are modified
+- Launch Psalm checks (if a `psalm.xml` exists) when `src` folder is modified
+- Verify the code style (if a `.php_cs.dist` or `.php-cs-fixer.dist.php` file exists) when `src`, `tests`, `proofs`, `fixtures` or `properties` folders are modified
 - Start docker compose when there is a `docker-compose.yml` at the project root
 
 ![](example.gif)
