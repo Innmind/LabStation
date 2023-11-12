@@ -5,15 +5,10 @@ namespace Innmind\LabStation\Agent;
 
 use Innmind\LabStation\{
     Agent,
-    Protocol,
+    Activities,
     Activity,
-    Activity\Type,
 };
-use Innmind\OperatingSystem\Filesystem;
-use Innmind\IPC\{
-    IPC,
-    Process\Name,
-};
+use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\Url\Path;
 use Innmind\Immutable\{
     Sequence,
@@ -22,42 +17,25 @@ use Innmind\Immutable\{
 
 final class WatchTests implements Agent
 {
-    private Protocol $protocol;
-    private Filesystem $filesystem;
-    private IPC $ipc;
-    private Name $monitor;
+    public function __invoke(
+        OperatingSystem $os,
+        Path $project,
+        Activities $activities,
+    ): ?Agent {
+        $tests = $project->resolve(Path::of('tests/'));
+        $filesystem = $os->filesystem();
 
-    public function __construct(
-        Protocol $protocol,
-        Filesystem $filesystem,
-        IPC $ipc,
-        Name $monitor,
-    ) {
-        $this->protocol = $protocol;
-        $this->filesystem = $filesystem;
-        $this->ipc = $ipc;
-        $this->monitor = $monitor;
-    }
-
-    public function __invoke(Path $project): void
-    {
-        $tests = $project->resolve(Path::of('tests'));
-
-        if (!$this->filesystem->contains($tests)) {
-            return;
+        if (!$filesystem->contains($tests)) {
+            return null;
         }
 
-        $this->filesystem->watch($tests)(
-            $this->ipc,
-            fn(IPC $ipc) => $ipc
-                ->get($this->monitor)
-                ->flatMap(fn($process) => $process->send(Sequence::of(
-                    $this->protocol->encode(new Activity(Type::testsModified)),
-                )))
-                ->flatMap(static fn($process) => $process->close())
-                ->either()
-                ->map(static fn() => $ipc)
-                ->otherwise(static fn() => Either::right($ipc)), // even if it failed to send the message continue to watch for file changes
+        $filesystem->watch($tests)(
+            $activities,
+            static fn(Activities $activities) => Either::right( // right in order to have an infinite loop
+                $activities->push(Activity::testsModified),
+            ),
         );
+
+        return $this;
     }
 }

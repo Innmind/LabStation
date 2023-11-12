@@ -8,15 +8,18 @@ use Innmind\LabStation\{
     Trigger,
     Triggers,
     Activity,
-    Activity\Type,
     Iteration,
 };
-use Innmind\OperatingSystem\Filesystem;
-use Innmind\Server\Control\Server\{
-    Processes,
-    Process,
-    Process\Output,
-    Process\ExitCode,
+use Innmind\OperatingSystem\{
+    OperatingSystem,
+    Filesystem,
+};
+use Innmind\Server\Control\{
+    Server,
+    Server\Processes,
+    Server\Process,
+    Server\Process\Output,
+    Server\Process\ExitCode,
 };
 use Innmind\CLI\{
     Environment,
@@ -26,7 +29,7 @@ use Innmind\CLI\{
 };
 use Innmind\Filesystem\{
     Adapter,
-    File\File,
+    File,
     File\Content,
 };
 use Innmind\Immutable\{
@@ -52,8 +55,6 @@ class TestsTest extends TestCase
         $this->assertInstanceOf(
             Trigger::class,
             new Tests(
-                $this->createMock(Filesystem::class),
-                $this->createMock(Processes::class),
                 new Iteration,
             ),
         );
@@ -61,14 +62,15 @@ class TestsTest extends TestCase
 
     public function testDoNothingWhenNotOfExpectedType()
     {
-        $trigger = new Tests(
-            $this->createMock(Filesystem::class),
-            $processes = $this->createMock(Processes::class),
-            new Iteration,
-        );
-        $processes
+        $trigger = new Tests(new Iteration);
+        $os = $this->createMock(OperatingSystem::class);
+
+        $os
             ->expects($this->never())
-            ->method('execute');
+            ->method('filesystem');
+        $os
+            ->expects($this->never())
+            ->method('control');
         $console = Console::of(
             $this->createMock(Environment::class),
             new Arguments,
@@ -76,8 +78,9 @@ class TestsTest extends TestCase
         );
 
         $this->assertSame($console, $trigger(
-            new Activity(Type::start),
             $console,
+            $os,
+            Activity::start,
             ISet::of(Triggers::tests),
         ));
     }
@@ -86,23 +89,20 @@ class TestsTest extends TestCase
     {
         $this
             ->forAll(Set\Elements::of(
-                Type::sourcesModified,
-                Type::testsModified,
-                Type::fixturesModified,
-                Type::propertiesModified,
+                Activity::sourcesModified,
+                Activity::testsModified,
+                Activity::fixturesModified,
+                Activity::propertiesModified,
             ))
             ->then(function($type) {
-                $trigger = new Tests(
-                    $filesystem = $this->createMock(Filesystem::class),
-                    $processes = $this->createMock(Processes::class),
-                    new Iteration,
-                );
-                $filesystem
+                $trigger = new Tests(new Iteration);
+                $os = $this->createMock(OperatingSystem::class);
+                $os
                     ->expects($this->never())
-                    ->method('mount');
-                $processes
+                    ->method('filesystem');
+                $os
                     ->expects($this->never())
-                    ->method('execute');
+                    ->method('control');
                 $console = Console::of(
                     Environment\InMemory::of(
                         [],
@@ -116,8 +116,9 @@ class TestsTest extends TestCase
                 );
 
                 $console = $trigger(
-                    new Activity($type),
                     $console,
+                    $os,
+                    $type,
                     ISet::of(),
                 );
                 $this->assertSame(
@@ -135,26 +136,38 @@ class TestsTest extends TestCase
     {
         $this
             ->forAll(Set\Elements::of(
-                Type::sourcesModified,
-                Type::testsModified,
-                Type::fixturesModified,
-                Type::propertiesModified,
+                Activity::sourcesModified,
+                Activity::testsModified,
+                Activity::fixturesModified,
+                Activity::propertiesModified,
             ))
             ->then(function($type) {
                 $trigger = new Tests(
-                    $filesystem = $this->createMock(Filesystem::class),
-                    $processes = $this->createMock(Processes::class),
                     $iteration = new Iteration,
                 );
+                $os = $this->createMock(OperatingSystem::class);
+                $filesystem = $this->createMock(Filesystem::class);
+                $server = $this->createMock(Server::class);
+                $processes = $this->createMock(Processes::class);
                 $adapter = Adapter\InMemory::new();
                 $adapter->add(File::named(
                     'phpunit.xml.dist',
-                    Content\None::of(),
+                    Content::none(),
                 ));
+
+                $os
+                    ->method('filesystem')
+                    ->willReturn($filesystem);
                 $filesystem
                     ->expects($this->once())
                     ->method('mount')
                     ->willReturn($adapter);
+                $os
+                    ->method('control')
+                    ->willReturn($server);
+                $server
+                    ->method('processes')
+                    ->willReturn($processes);
                 $tests = $this->createMock(Process::class);
                 $say = $this->createMock(Process::class);
                 $processes
@@ -216,8 +229,9 @@ class TestsTest extends TestCase
 
                 $iteration->start();
                 $console = $trigger(
-                    new Activity($type),
                     $console,
+                    $os,
+                    $type,
                     ISet::of(Triggers::tests),
                 );
                 $console = $iteration->end($console);
@@ -236,22 +250,34 @@ class TestsTest extends TestCase
     {
         $this
             ->forAll(Set\Elements::of(
-                Type::sourcesModified,
-                Type::testsModified,
-                Type::fixturesModified,
-                Type::propertiesModified,
+                Activity::sourcesModified,
+                Activity::testsModified,
+                Activity::fixturesModified,
+                Activity::propertiesModified,
             ))
             ->then(function($type) {
                 $trigger = new Tests(
-                    $filesystem = $this->createMock(Filesystem::class),
-                    $processes = $this->createMock(Processes::class),
                     $iteration = new Iteration,
                 );
+                $os = $this->createMock(OperatingSystem::class);
+                $filesystem = $this->createMock(Filesystem::class);
+                $server = $this->createMock(Server::class);
+                $processes = $this->createMock(Processes::class);
                 $adapter = Adapter\InMemory::new();
+
+                $os
+                    ->method('filesystem')
+                    ->willReturn($filesystem);
                 $filesystem
                     ->expects($this->once())
                     ->method('mount')
                     ->willReturn($adapter);
+                $os
+                    ->method('control')
+                    ->willReturn($server);
+                $server
+                    ->method('processes')
+                    ->willReturn($processes);
                 $processes
                     ->expects($this->never())
                     ->method('execute');
@@ -269,8 +295,9 @@ class TestsTest extends TestCase
 
                 $iteration->start();
                 $console = $trigger(
-                    new Activity($type),
                     $console,
+                    $os,
+                    $type,
                     ISet::of(Triggers::tests),
                 );
                 $console = $iteration->end($console);
@@ -288,19 +315,32 @@ class TestsTest extends TestCase
     public function testDoesntClearTerminalOnSuccessfullTestWhenSpecifiedOptionProvided()
     {
         $trigger = new Tests(
-            $filesystem = $this->createMock(Filesystem::class),
-            $processes = $this->createMock(Processes::class),
             $iteration = new Iteration,
         );
+        $os = $this->createMock(OperatingSystem::class);
+        $filesystem = $this->createMock(Filesystem::class);
+        $server = $this->createMock(Server::class);
+        $processes = $this->createMock(Processes::class);
         $adapter = Adapter\InMemory::new();
         $adapter->add(File::named(
             'phpunit.xml.dist',
-            Content\None::of(),
+            Content::none(),
         ));
+
+        $os
+            ->method('filesystem')
+            ->willReturn($filesystem);
         $filesystem
             ->expects($this->once())
             ->method('mount')
             ->willReturn($adapter);
+        $os
+            ->method('control')
+            ->willReturn($server);
+        $server
+            ->method('processes')
+            ->willReturn($processes);
+
         $tests = $this->createMock(Process::class);
         $say = $this->createMock(Process::class);
         $processes
@@ -356,8 +396,9 @@ class TestsTest extends TestCase
 
         $iteration->start();
         $console = $trigger(
-            new Activity(Type::sourcesModified),
             $console,
+            $os,
+            Activity::sourcesModified,
             ISet::of(Triggers::tests),
         );
         $console = $iteration->end($console);
@@ -367,19 +408,32 @@ class TestsTest extends TestCase
     public function testSaidMessageIsChangedWhenTestsAreFailing()
     {
         $trigger = new Tests(
-            $filesystem = $this->createMock(Filesystem::class),
-            $processes = $this->createMock(Processes::class),
             $iteration = new Iteration,
         );
+        $os = $this->createMock(OperatingSystem::class);
+        $filesystem = $this->createMock(Filesystem::class);
+        $server = $this->createMock(Server::class);
+        $processes = $this->createMock(Processes::class);
         $adapter = Adapter\InMemory::new();
         $adapter->add(File::named(
             'phpunit.xml.dist',
-            Content\None::of(),
+            Content::none(),
         ));
+
+        $os
+            ->method('filesystem')
+            ->willReturn($filesystem);
         $filesystem
             ->expects($this->once())
             ->method('mount')
             ->willReturn($adapter);
+        $os
+            ->method('control')
+            ->willReturn($server);
+        $server
+            ->method('processes')
+            ->willReturn($processes);
+
         $tests = $this->createMock(Process::class);
         $say = $this->createMock(Process::class);
         $processes
@@ -435,8 +489,9 @@ class TestsTest extends TestCase
 
         $iteration->start();
         $console = $trigger(
-            new Activity(Type::sourcesModified),
             $console,
+            $os,
+            Activity::sourcesModified,
             ISet::of(Triggers::tests),
         );
         $console = $iteration->end($console);
@@ -446,19 +501,31 @@ class TestsTest extends TestCase
     public function testNoMessageIsSpokenWhenUsingTheSilentOption()
     {
         $trigger = new Tests(
-            $filesystem = $this->createMock(Filesystem::class),
-            $processes = $this->createMock(Processes::class),
             $iteration = new Iteration,
         );
+        $os = $this->createMock(OperatingSystem::class);
+        $filesystem = $this->createMock(Filesystem::class);
+        $server = $this->createMock(Server::class);
+        $processes = $this->createMock(Processes::class);
         $adapter = Adapter\InMemory::new();
         $adapter->add(File::named(
             'phpunit.xml.dist',
-            Content\None::of(),
+            Content::none(),
         ));
+
+        $os
+            ->method('filesystem')
+            ->willReturn($filesystem);
         $filesystem
             ->expects($this->once())
             ->method('mount')
             ->willReturn($adapter);
+        $os
+            ->method('control')
+            ->willReturn($server);
+        $server
+            ->method('processes')
+            ->willReturn($processes);
         $processes
             ->expects($this->once())
             ->method('execute')
@@ -492,8 +559,9 @@ class TestsTest extends TestCase
 
         $iteration->start();
         $console = $trigger(
-            new Activity(Type::sourcesModified),
             $console,
+            $os,
+            Activity::sourcesModified,
             ISet::of(Triggers::tests),
         );
         $console = $iteration->end($console);

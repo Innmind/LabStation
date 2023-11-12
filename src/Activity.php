@@ -3,19 +3,33 @@ declare(strict_types = 1);
 
 namespace Innmind\LabStation;
 
-use Innmind\LabStation\Activity\Type;
-
-final class Activity
+enum Activity
 {
-    private Type $type;
+    case sourcesModified;
+    case testsModified;
+    case fixturesModified;
+    case propertiesModified;
+    case start;
 
-    public function __construct(Type $type)
+    public static function of(string $type): self
     {
-        $this->type = $type;
+        return match ($type) {
+            'sourcesModified' => self::sourcesModified,
+            'testsModified' => self::testsModified,
+            'fixturesModified' => self::fixturesModified,
+            'propertiesModified' => self::propertiesModified,
+            'start' => self::start,
+        };
     }
 
-    public function type(): Type
+    public function toString(): string
     {
-        return $this->type;
+        return match ($this) {
+            self::sourcesModified => 'sourcesModified',
+            self::testsModified => 'testsModified',
+            self::fixturesModified => 'fixturesModified',
+            self::propertiesModified => 'propertiesModified',
+            self::start => 'start',
+        };
     }
 }
