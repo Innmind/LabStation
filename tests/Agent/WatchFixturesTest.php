@@ -30,7 +30,7 @@ class WatchFixturesTest extends TestCase
     {
         $this->assertInstanceOf(
             Agent::class,
-            new WatchFixtures
+            new WatchFixtures,
         );
     }
 

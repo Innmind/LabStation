@@ -30,7 +30,7 @@ class WatchProofsTest extends TestCase
     {
         $this->assertInstanceOf(
             Agent::class,
-            new WatchProofs
+            new WatchProofs,
         );
     }
 
