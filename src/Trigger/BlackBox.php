@@ -7,15 +7,11 @@ use Innmind\LabStation\{
     Trigger,
     Triggers,
     Activity,
-    Activity\Type,
     Iteration,
 };
-use Innmind\OperatingSystem\Filesystem;
+use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\CLI\Console;
-use Innmind\Server\Control\Server\{
-    Processes,
-    Command,
-};
+use Innmind\Server\Control\Server\Command;
 use Innmind\Filesystem\Name;
 use Innmind\Immutable\{
     Map,
@@ -24,51 +20,45 @@ use Innmind\Immutable\{
 
 final class BlackBox implements Trigger
 {
-    private Filesystem $filesystem;
-    private Processes $processes;
     private Iteration $iteration;
 
-    public function __construct(
-        Filesystem $filesystem,
-        Processes $processes,
-        Iteration $iteration,
-    ) {
-        $this->filesystem = $filesystem;
-        $this->processes = $processes;
+    public function __construct(Iteration $iteration)
+    {
         $this->iteration = $iteration;
     }
 
     public function __invoke(
-        Activity $activity,
         Console $console,
+        OperatingSystem $os,
+        Activity $activity,
         Set $triggers,
     ): Console {
-        if (!$triggers->contains(Triggers::tests)) {
+        if (!$triggers->contains(Triggers::proofs)) {
             return $console;
         }
 
-        return match ($activity->type()) {
-            Type::sourcesModified => $this->attempt($console),
-            Type::testsModified => $this->attempt($console),
-            Type::fixturesModified => $this->attempt($console),
-            Type::propertiesModified => $this->attempt($console),
+        return match ($activity) {
+            Activity::sourcesModified => $this->attempt($console, $os),
+            Activity::proofsModified => $this->attempt($console, $os),
+            Activity::fixturesModified => $this->attempt($console, $os),
+            Activity::propertiesModified => $this->attempt($console, $os),
             default => $console,
         };
     }
 
-    private function attempt(Console $console): Console
+    private function attempt(Console $console, OperatingSystem $os): Console
     {
-        return $this
-            ->filesystem
+        return $os
+            ->filesystem()
             ->mount($console->workingDirectory())
-            ->get(new Name('blackbox.php'))
+            ->get(Name::of('blackbox.php'))
             ->match(
-                fn() => $this->run($console),
+                fn() => $this->run($console, $os),
                 static fn() => $console,
             );
     }
 
-    private function run(Console $console): Console
+    private function run(Console $console, OperatingSystem $os): Console
     {
         /** @var Map<non-empty-string, string> */
         $variables = $console
@@ -79,8 +69,9 @@ final class BlackBox implements Trigger
                 true,
             ));
 
-        $process = $this
-            ->processes
+        $process = $os
+            ->control()
+            ->processes()
             ->execute(
                 Command::foreground('php')
                     ->withArgument('blackbox.php')
@@ -106,8 +97,9 @@ final class BlackBox implements Trigger
             return $console;
         }
 
-        return $this
-            ->processes
+        return $os
+            ->control()
+            ->processes()
             ->execute(
                 Command::foreground('say')->withArgument(
                     'BlackBox : '. match ($successful) {

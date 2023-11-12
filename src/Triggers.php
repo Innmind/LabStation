@@ -13,6 +13,7 @@ enum Triggers
     case dockerCompose;
     case psalm;
     case tests;
+    case proofs;
 
     /**
      * @psalm-pure
@@ -25,6 +26,7 @@ enum Triggers
             'docker', 'dockerCompose' => self::dockerCompose,
             'psalm' => self::psalm,
             'tests', 'phpunit' => self::tests,
+            'proofs', 'blackbox', 'bb' => self::proofs,
         };
     }
 
@@ -39,6 +41,7 @@ enum Triggers
             'docker', 'dockerCompose' => true,
             'psalm' => true,
             'tests', 'phpunit' => true,
+            'proofs', 'blackbox', 'bb' => true,
             default => false,
         };
     }

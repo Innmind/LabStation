@@ -1,5 +1,22 @@
 # Changelog
 
+## 4.0.0 - 2023-11-12
+
+### Added
+
+- You can use `proofs`, `blackbox` or `bb` as triggers to only run proofs via BlackBox
+
+### Changed
+
+- Tests are no longer run when the `proofs` or `properties` directories are modified
+- Proofs are no longer run when the `tests` directory is modified
+- Psalm is no longer run when the `tests` directory is modified
+- Coding standard is run when the `proofs` directory is modified
+
+### Fixed
+
+- Agents sub processes would become zombies when the parent process would crash (no longer possible as everything is done in the same process)
+
 ## 3.7.0 - 2023-09-24
 
 ### Added

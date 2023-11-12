@@ -6,24 +6,21 @@ namespace Tests\Innmind\LabStation\Agent;
 use Innmind\LabStation\{
     Agent\WatchProofs,
     Agent,
-    Protocol,
+    Activities,
     Activity,
-    Activity\Type,
+    Trigger,
+    Triggers,
+    Iteration,
 };
-use Innmind\OperatingSystem\Filesystem;
+use Innmind\OperatingSystem\{
+    OperatingSystem,
+    Filesystem,
+};
 use Innmind\FileWatch\Ping;
-use Innmind\IPC\{
-    IPC,
-    Message,
-    Process,
-    Process\Name,
-};
 use Innmind\Url\Path;
 use Innmind\Immutable\{
-    Maybe,
-    Sequence,
-    SideEffect,
     Either,
+    Set,
 };
 use PHPUnit\Framework\TestCase;
 
@@ -33,90 +30,85 @@ class WatchProofsTest extends TestCase
     {
         $this->assertInstanceOf(
             Agent::class,
-            new WatchProofs(
-                $this->createMock(Protocol::class),
-                $this->createMock(Filesystem::class),
-                $this->createMock(IPC::class),
-                Name::of('foo'),
-            ),
+            new WatchProofs,
         );
     }
 
-    public function testSendMessageWhenSourcesAreModified()
+    public function testSendMessageWhenProofsAreModified()
     {
-        $agent = new WatchProofs(
-            $protocol = $this->createMock(Protocol::class),
-            $filesystem = $this->createMock(Filesystem::class),
-            $ipc = $this->createMock(IPC::class),
-            $name = Name::of('foo'),
+        $agent = new WatchProofs;
+
+        $os = $this->createMock(OperatingSystem::class);
+        $filesystem = $this->createMock(Filesystem::class);
+        $activities = Activities::new(
+            $this->createMock(Trigger::class),
+            new Iteration,
+            Set::of(...Triggers::cases()),
         );
         $project = Path::of('/vendor/package/');
-        $protocol
-            ->expects($this->once())
-            ->method('encode')
-            ->with(new Activity(Type::testsModified))
-            ->willReturn($message = $this->createMock(Message::class));
-        $ipc
-            ->expects($this->once())
-            ->method('get')
-            ->with($name)
-            ->willReturn(Maybe::just($process = $this->createMock(Process::class)));
-        $process
-            ->expects($this->once())
-            ->method('send')
-            ->with(Sequence::of($message))
-            ->willReturn(Maybe::just($process));
-        $process
-            ->expects($this->once())
-            ->method('close')
-            ->willReturn(Maybe::just(new SideEffect));
+
+        $os
+            ->method('filesystem')
+            ->willReturn($filesystem);
         $filesystem
             ->expects($this->once())
             ->method('contains')
-            ->with(Path::of('/vendor/package/proofs'))
+            ->with(Path::of('/vendor/package/proofs/'))
             ->willReturn(true);
         $filesystem
             ->expects($this->once())
             ->method('watch')
-            ->with(Path::of('/vendor/package/proofs'))
+            ->with(Path::of('/vendor/package/proofs/'))
             ->willReturn($ping = $this->createMock(Ping::class));
         $ping
             ->expects($this->once())
             ->method('__invoke')
-            ->with($ipc, $this->callback(static function($listen) use ($ipc): bool {
-                $listen($ipc); // simulate folder modification
+            ->with($activities, $this->callback(static function($listen) use ($activities): bool {
+                $listen($activities); // simulate folder modification
 
                 return true;
             }))
-            ->willReturn(Either::right($ipc));
+            ->willReturn(Either::right($activities));
 
-        $this->assertNull($agent($project));
+        $this->assertSame($agent, $agent($os, $project, $activities));
+        $this->assertEquals(
+            [
+                Activity::start,
+                Activity::proofsModified,
+            ],
+            $activities->toList(),
+        );
     }
 
     public function testDoesntWatchWhenTheFolderDoesntExist()
     {
-        $agent = new WatchProofs(
-            $protocol = $this->createMock(Protocol::class),
-            $filesystem = $this->createMock(Filesystem::class),
-            $ipc = $this->createMock(IPC::class),
-            $name = Name::of('foo'),
+        $agent = new WatchProofs;
+
+        $os = $this->createMock(OperatingSystem::class);
+        $filesystem = $this->createMock(Filesystem::class);
+        $activities = Activities::new(
+            $this->createMock(Trigger::class),
+            new Iteration,
+            Set::of(...Triggers::cases()),
         );
         $project = Path::of('/vendor/package/');
-        $protocol
-            ->expects($this->never())
-            ->method('encode');
-        $ipc
-            ->expects($this->never())
-            ->method('get');
+
+        $os
+            ->method('filesystem')
+            ->willReturn($filesystem);
         $filesystem
             ->expects($this->once())
             ->method('contains')
-            ->with(Path::of('/vendor/package/proofs'))
+            ->with(Path::of('/vendor/package/proofs/'))
             ->willReturn(false);
         $filesystem
             ->expects($this->never())
             ->method('watch');
 
-        $this->assertNull($agent($project));
+        $this->assertNull($agent($os, $project, $activities));
+        $this->assertEquals(
+            [Activity::start],
+            $activities->toList(),
+        );
     }
 }

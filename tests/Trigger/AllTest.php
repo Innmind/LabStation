@@ -7,7 +7,6 @@ use Innmind\LabStation\{
     Trigger\All,
     Trigger,
     Activity,
-    Activity\Type,
 };
 use Innmind\CLI\{
     Environment,
@@ -15,6 +14,7 @@ use Innmind\CLI\{
     Command\Arguments,
     Command\Options,
 };
+use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\Immutable\Set;
 use PHPUnit\Framework\TestCase;
 
@@ -33,28 +33,29 @@ class AllTest extends TestCase
             $trigger3 = $this->createMock(Trigger::class),
         );
         $triggers = Set::of();
-        $activity = new Activity(Type::start);
+        $activity = Activity::start;
         $console = Console::of(
             $this->createMock(Environment::class),
             new Arguments,
             new Options,
         );
+        $os = $this->createMock(OperatingSystem::class);
         $trigger1
             ->expects($this->once())
             ->method('__invoke')
-            ->with($activity, $console, $triggers)
+            ->with($console, $os, $activity, $triggers)
             ->willReturn($console);
         $trigger2
             ->expects($this->once())
             ->method('__invoke')
-            ->with($activity, $console, $triggers)
+            ->with($console, $os, $activity, $triggers)
             ->willReturn($console);
         $trigger3
             ->expects($this->once())
             ->method('__invoke')
-            ->with($activity, $console, $triggers)
+            ->with($console, $os, $activity, $triggers)
             ->willReturn($console);
 
-        $this->assertSame($console, $trigger($activity, $console, $triggers));
+        $this->assertSame($console, $trigger($console, $os, $activity, $triggers));
     }
 }
