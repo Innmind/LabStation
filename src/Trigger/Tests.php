@@ -7,7 +7,6 @@ use Innmind\LabStation\{
     Trigger,
     Triggers,
     Activity,
-    Activity\Type,
     Iteration,
 };
 use Innmind\CLI\Console;
@@ -38,11 +37,11 @@ final class Tests implements Trigger
             return $console;
         }
 
-        return match ($activity->type()) {
-            Type::sourcesModified => $this->attempt($console, $os),
-            Type::testsModified => $this->attempt($console, $os),
-            Type::fixturesModified => $this->attempt($console, $os),
-            Type::propertiesModified => $this->attempt($console, $os),
+        return match ($activity) {
+            Activity::sourcesModified => $this->attempt($console, $os),
+            Activity::testsModified => $this->attempt($console, $os),
+            Activity::fixturesModified => $this->attempt($console, $os),
+            Activity::propertiesModified => $this->attempt($console, $os),
             default => $console,
         };
     }

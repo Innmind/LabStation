@@ -7,7 +7,6 @@ use Innmind\LabStation\{
     Agent,
     Activities,
     Activity,
-    Activity\Type,
 };
 use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\Url\Path;
@@ -25,7 +24,7 @@ final class WatchSources implements Agent
         $os->filesystem()->watch($src)(
             $activities,
             static fn(Activities $activities) => Either::right( // right in order to have an infinite loop
-                $activities->push(new Activity(Type::sourcesModified)),
+                $activities->push(Activity::sourcesModified),
             ),
         );
 

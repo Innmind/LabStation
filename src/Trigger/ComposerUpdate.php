@@ -7,7 +7,6 @@ use Innmind\LabStation\{
     Trigger,
     Triggers,
     Activity,
-    Activity\Type,
 };
 use Innmind\CLI\{
     Console,
@@ -36,8 +35,8 @@ final class ComposerUpdate implements Trigger
             return $console;
         }
 
-        return match ($activity->type()) {
-            Type::start => $this->ask($console, $os),
+        return match ($activity) {
+            Activity::start => $this->ask($console, $os),
             default => $console,
         };
     }

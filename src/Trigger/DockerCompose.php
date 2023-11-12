@@ -7,7 +7,6 @@ use Innmind\LabStation\{
     Trigger,
     Triggers,
     Activity,
-    Activity\Type,
 };
 use Innmind\CLI\Console;
 use Innmind\OperatingSystem\OperatingSystem;
@@ -31,8 +30,8 @@ final class DockerCompose implements Trigger
             return $console;
         }
 
-        return match ($activity->type()) {
-            Type::start => $this->attempt($console, $os),
+        return match ($activity) {
+            Activity::start => $this->attempt($console, $os),
             default => $console,
         };
     }

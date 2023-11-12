@@ -75,7 +75,7 @@ final class Activities
             $trigger,
             $iteration,
             $triggers,
-            [new Activity(Activity\Type::start)],
+            [Activity::start],
         );
     }
 

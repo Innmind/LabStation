@@ -7,7 +7,6 @@ use Innmind\LabStation\{
     Trigger,
     Triggers,
     Activity,
-    Activity\Type,
     Iteration,
 };
 use Innmind\CLI\Console;
@@ -38,9 +37,9 @@ final class Psalm implements Trigger
             return $console;
         }
 
-        return match ($activity->type()) {
-            Type::sourcesModified => $this->attempt($console, $os),
-            Type::testsModified => $this->attempt($console, $os),
+        return match ($activity) {
+            Activity::sourcesModified => $this->attempt($console, $os),
+            Activity::testsModified => $this->attempt($console, $os),
             default => $console,
         };
     }

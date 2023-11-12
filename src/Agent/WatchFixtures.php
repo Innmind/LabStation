@@ -7,7 +7,6 @@ use Innmind\LabStation\{
     Agent,
     Activities,
     Activity,
-    Activity\Type,
 };
 use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\Url\Path;
@@ -30,7 +29,7 @@ final class WatchFixtures implements Agent
         $filesystem->watch($fixtures)(
             $activities,
             static fn(Activities $activities) => Either::right( // right in order to have an infinite loop
-                $activities->push(new Activity(Type::fixturesModified)),
+                $activities->push(Activity::fixturesModified),
             ),
         );
 
