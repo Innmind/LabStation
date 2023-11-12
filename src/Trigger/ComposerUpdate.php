@@ -13,8 +13,8 @@ use Innmind\CLI\{
     Console,
     Question\Question,
 };
+use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\Server\Control\Server\{
-    Processes,
     Command,
     Process\Output,
 };
@@ -26,16 +26,10 @@ use Innmind\Immutable\{
 
 final class ComposerUpdate implements Trigger
 {
-    private Processes $processes;
-
-    public function __construct(Processes $processes)
-    {
-        $this->processes = $processes;
-    }
-
     public function __invoke(
-        Activity $activity,
         Console $console,
+        OperatingSystem $os,
+        Activity $activity,
         Set $triggers,
     ): Console {
         if (!$triggers->contains(Triggers::composerUpdate)) {
@@ -43,12 +37,12 @@ final class ComposerUpdate implements Trigger
         }
 
         return match ($activity->type()) {
-            Type::start => $this->ask($console),
+            Type::start => $this->ask($console, $os),
             default => $console,
         };
     }
 
-    private function ask(Console $console): Console
+    private function ask(Console $console, OperatingSystem $os): Console
     {
         $ask = new Question('Update dependencies? [Y/n]');
         [$response, $console] = $ask($console);
@@ -59,20 +53,21 @@ final class ComposerUpdate implements Trigger
                 default => false,
             })
             ->match(
-                fn() => $this->run($console),
+                fn() => $this->run($console, $os),
                 static fn() => $console,
             );
     }
 
-    private function run(Console $console): Console
+    private function run(Console $console, OperatingSystem $os): Console
     {
         /** @var Map<non-empty-string, string> */
         $variables = $console->variables()->filter(
             static fn($key) => \in_array($key, ['HOME', 'USER', 'PATH'], true),
         );
 
-        return $this
-            ->processes
+        return $os
+            ->control()
+            ->processes()
             ->execute(
                 Command::foreground('composer')
                     ->withOption('ansi')

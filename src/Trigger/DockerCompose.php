@@ -10,11 +10,8 @@ use Innmind\LabStation\{
     Activity\Type,
 };
 use Innmind\CLI\Console;
-use Innmind\OperatingSystem\Filesystem;
-use Innmind\Server\Control\Server\{
-    Processes,
-    Command,
-};
+use Innmind\OperatingSystem\OperatingSystem;
+use Innmind\Server\Control\Server\Command;
 use Innmind\Filesystem\Name;
 use Innmind\Immutable\{
     Map,
@@ -24,18 +21,10 @@ use Innmind\Immutable\{
 
 final class DockerCompose implements Trigger
 {
-    private Filesystem $filesystem;
-    private Processes $processes;
-
-    public function __construct(Filesystem $filesystem, Processes $processes)
-    {
-        $this->filesystem = $filesystem;
-        $this->processes = $processes;
-    }
-
     public function __invoke(
-        Activity $activity,
         Console $console,
+        OperatingSystem $os,
+        Activity $activity,
         Set $triggers,
     ): Console {
         if (!$triggers->contains(Triggers::dockerCompose)) {
@@ -43,32 +32,33 @@ final class DockerCompose implements Trigger
         }
 
         return match ($activity->type()) {
-            Type::start => $this->attempt($console),
+            Type::start => $this->attempt($console, $os),
             default => $console,
         };
     }
 
-    private function attempt(Console $console): Console
+    private function attempt(Console $console, OperatingSystem $os): Console
     {
-        return $this
-            ->filesystem
+        return $os
+            ->filesystem()
             ->mount($console->workingDirectory())
-            ->get(new Name('docker-compose.yml'))
+            ->get(Name::of('docker-compose.yml'))
             ->match(
-                fn() => $this->run($console),
+                fn() => $this->run($console, $os),
                 static fn() => $console,
             );
     }
 
-    private function run(Console $console): Console
+    private function run(Console $console, OperatingSystem $os): Console
     {
         /** @var Map<non-empty-string, string> */
         $variables = $console
             ->variables()
             ->filter(static fn($key) => $key === 'PATH');
 
-        return $this
-            ->processes
+        return $os
+            ->control()
+            ->processes()
             ->execute(
                 Command::foreground('docker-compose')
                     ->withArgument('up')

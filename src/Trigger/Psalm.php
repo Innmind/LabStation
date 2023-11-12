@@ -11,11 +11,8 @@ use Innmind\LabStation\{
     Iteration,
 };
 use Innmind\CLI\Console;
-use Innmind\Server\Control\Server\{
-    Processes,
-    Command,
-};
-use Innmind\OperatingSystem\Filesystem;
+use Innmind\OperatingSystem\OperatingSystem;
+use Innmind\Server\Control\Server\Command;
 use Innmind\Filesystem\Name;
 use Innmind\Immutable\{
     Map,
@@ -24,23 +21,17 @@ use Innmind\Immutable\{
 
 final class Psalm implements Trigger
 {
-    private Processes $processes;
-    private Filesystem $filesystem;
     private Iteration $iteration;
 
-    public function __construct(
-        Processes $processes,
-        Filesystem $filesystem,
-        Iteration $iteration,
-    ) {
-        $this->processes = $processes;
-        $this->filesystem = $filesystem;
+    public function __construct(Iteration $iteration)
+    {
         $this->iteration = $iteration;
     }
 
     public function __invoke(
-        Activity $activity,
         Console $console,
+        OperatingSystem $os,
+        Activity $activity,
         Set $triggers,
     ): Console {
         if (!$triggers->contains(Triggers::psalm)) {
@@ -48,33 +39,34 @@ final class Psalm implements Trigger
         }
 
         return match ($activity->type()) {
-            Type::sourcesModified => $this->ettempt($console),
-            Type::testsModified => $this->ettempt($console),
+            Type::sourcesModified => $this->attempt($console, $os),
+            Type::testsModified => $this->attempt($console, $os),
             default => $console,
         };
     }
 
-    private function ettempt(Console $console): Console
+    private function attempt(Console $console, OperatingSystem $os): Console
     {
-        return $this
-            ->filesystem
+        return $os
+            ->filesystem()
             ->mount($console->workingDirectory())
-            ->get(new Name('psalm.xml'))
+            ->get(Name::of('psalm.xml'))
             ->match(
-                fn() => $this->run($console),
+                fn() => $this->run($console, $os),
                 static fn() => $console,
             );
     }
 
-    private function run(Console $console): Console
+    private function run(Console $console, OperatingSystem $os): Console
     {
         /** @var Map<non-empty-string, string> */
         $variables = $console->variables()->filter(
             static fn($key) => \in_array($key, ['HOME', 'USER', 'PATH'], true),
         );
 
-        $process = $this
-            ->processes
+        $process = $os
+            ->control()
+            ->processes()
             ->execute(
                 Command::foreground('vendor/bin/psalm')
                     ->withOption('no-cache')
@@ -100,8 +92,9 @@ final class Psalm implements Trigger
             return $console;
         }
 
-        return $this
-            ->processes
+        return $os
+            ->control()
+            ->processes()
             ->execute(
                 Command::foreground('say')->withArgument(
                     'Psalm : '. match ($successful) {

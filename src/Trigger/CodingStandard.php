@@ -11,11 +11,8 @@ use Innmind\LabStation\{
     Iteration,
 };
 use Innmind\CLI\Console;
-use Innmind\Server\Control\Server\{
-    Processes,
-    Command,
-};
-use Innmind\OperatingSystem\Filesystem;
+use Innmind\OperatingSystem\OperatingSystem;
+use Innmind\Server\Control\Server\Command;
 use Innmind\Filesystem\Name;
 use Innmind\Immutable\{
     Map,
@@ -24,23 +21,17 @@ use Innmind\Immutable\{
 
 final class CodingStandard implements Trigger
 {
-    private Processes $processes;
-    private Filesystem $filesystem;
     private Iteration $iteration;
 
-    public function __construct(
-        Processes $processes,
-        Filesystem $filesystem,
-        Iteration $iteration,
-    ) {
-        $this->processes = $processes;
-        $this->filesystem = $filesystem;
+    public function __construct(Iteration $iteration)
+    {
         $this->iteration = $iteration;
     }
 
     public function __invoke(
-        Activity $activity,
         Console $console,
+        OperatingSystem $os,
+        Activity $activity,
         Set $triggers,
     ): Console {
         if (!$triggers->contains(Triggers::codingStandard)) {
@@ -48,29 +39,32 @@ final class CodingStandard implements Trigger
         }
 
         return match ($activity->type()) {
-            Type::sourcesModified => $this->attempt($console),
-            Type::testsModified => $this->attempt($console),
-            Type::fixturesModified => $this->attempt($console),
-            Type::propertiesModified => $this->attempt($console),
+            Type::sourcesModified => $this->attempt($console, $os),
+            Type::testsModified => $this->attempt($console, $os),
+            Type::fixturesModified => $this->attempt($console, $os),
+            Type::propertiesModified => $this->attempt($console, $os),
             default => $console,
         };
     }
 
-    private function attempt(Console $console): Console
+    private function attempt(Console $console, OperatingSystem $os): Console
     {
-        $directory = $this->filesystem->mount($console->workingDirectory());
+        $directory = $os->filesystem()->mount($console->workingDirectory());
 
         return $directory
-            ->get(new Name('.php_cs.dist'))
-            ->otherwise(static fn() => $directory->get(new Name('.php-cs-fixer.dist.php')))
+            ->get(Name::of('.php_cs.dist'))
+            ->otherwise(static fn() => $directory->get(Name::of('.php-cs-fixer.dist.php')))
             ->match(
-                fn($file) => $this->run($console, $file->name()),
+                fn($file) => $this->run($console, $os, $file->name()),
                 static fn() => $console,
             );
     }
 
-    private function run(Console $console, Name $file): Console
-    {
+    private function run(
+        Console $console,
+        OperatingSystem $os,
+        Name $file,
+    ): Console {
         /** @var Map<non-empty-string, string> */
         $variables = $console
             ->variables()
@@ -89,8 +83,9 @@ final class CodingStandard implements Trigger
                 ->withArgument('udiff');
         }
 
-        $process = $this
-            ->processes
+        $process = $os
+            ->control()
+            ->processes()
             ->execute($command);
         $console = $process
             ->output()
@@ -111,8 +106,9 @@ final class CodingStandard implements Trigger
             return $console;
         }
 
-        return $this
-            ->processes
+        return $os
+            ->control()
+            ->processes()
             ->execute(
                 Command::foreground('say')->withArgument(
                     'Coding Standard : '. match ($successful) {
