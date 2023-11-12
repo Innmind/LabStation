@@ -40,6 +40,7 @@ final class CodingStandard implements Trigger
         return match ($activity) {
             Activity::sourcesModified => $this->attempt($console, $os),
             Activity::testsModified => $this->attempt($console, $os),
+            Activity::proofsModified => $this->attempt($console, $os),
             Activity::fixturesModified => $this->attempt($console, $os),
             Activity::propertiesModified => $this->attempt($console, $os),
             default => $console,

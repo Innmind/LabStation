@@ -43,9 +43,15 @@ use Innmind\Immutable\{
     Set,
 };
 use PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\{
+    PHPUnit\BlackBox,
+    Set as DataSet,
+};
 
 class CodingStandardTest extends TestCase
 {
+    use BlackBox;
+
     public function testInterface()
     {
         $this->assertInstanceOf(
@@ -159,106 +165,116 @@ class CodingStandardTest extends TestCase
 
     public function testTriggerTestsSuiteWhenSourcesModified()
     {
-        $trigger = new CodingStandard(
-            $iteration = new Iteration,
-        );
+        $this
+            ->forAll(DataSet\Elements::of(
+                Activity::sourcesModified,
+                Activity::proofsModified,
+                Activity::testsModified,
+                Activity::fixturesModified,
+                Activity::propertiesModified,
+            ))
+            ->then(function($activity) {
+                $trigger = new CodingStandard(
+                    $iteration = new Iteration,
+                );
 
-        $os = $this->createMock(OperatingSystem::class);
-        $server = $this->createMock(Server::class);
-        $processes = $this->createMock(Processes::class);
-        $filesystem = $this->createMock(Filesystem::class);
-        $adapter = Adapter\InMemory::new();
-        $adapter->add(File::named(
-            '.php_cs.dist',
-            Content::none(),
-        ));
+                $os = $this->createMock(OperatingSystem::class);
+                $server = $this->createMock(Server::class);
+                $processes = $this->createMock(Processes::class);
+                $filesystem = $this->createMock(Filesystem::class);
+                $adapter = Adapter\InMemory::new();
+                $adapter->add(File::named(
+                    '.php_cs.dist',
+                    Content::none(),
+                ));
 
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->with(Path::of('/somewhere/'))
-            ->willReturn($adapter);
-        $cs = $this->createMock(Process::class);
-        $say = $this->createMock(Process::class);
-        $os
-            ->method('control')
-            ->willReturn($server);
-        $server
-            ->method('processes')
-            ->willReturn($processes);
-        $processes
-            ->expects($matcher = $this->exactly(2))
-            ->method('execute')
-            ->willReturnCallback(function($command) use ($matcher, $cs, $say) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertSame(
-                        "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
-                        $command->toString(),
+                $os
+                    ->method('filesystem')
+                    ->willReturn($filesystem);
+                $filesystem
+                    ->expects($this->once())
+                    ->method('mount')
+                    ->with(Path::of('/somewhere/'))
+                    ->willReturn($adapter);
+                $cs = $this->createMock(Process::class);
+                $say = $this->createMock(Process::class);
+                $os
+                    ->method('control')
+                    ->willReturn($server);
+                $server
+                    ->method('processes')
+                    ->willReturn($processes);
+                $processes
+                    ->expects($matcher = $this->exactly(2))
+                    ->method('execute')
+                    ->willReturnCallback(function($command) use ($matcher, $cs, $say) {
+                        match ($matcher->numberOfInvocations()) {
+                            1 => $this->assertSame(
+                                "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
+                                $command->toString(),
+                            ),
+                            2 => $this->assertSame(
+                                "say 'Coding Standard : right'",
+                                $command->toString(),
+                            ),
+                        };
+
+                        if ($matcher->numberOfInvocations() === 1) {
+                            $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                                static fn($path) => $path->toString(),
+                                static fn() => null,
+                            ));
+                        }
+
+                        return match ($matcher->numberOfInvocations()) {
+                            1 => $cs,
+                            2 => $say,
+                        };
+                    });
+                $cs
+                    ->expects($this->once())
+                    ->method('output')
+                    ->willReturn(new Output\Output(Sequence::of(
+                        [Str::of('some output'), Output\Type::output],
+                        [Str::of('some error'), Output\Type::error],
+                    )));
+                $cs
+                    ->expects($this->once())
+                    ->method('wait')
+                    ->willReturn(Either::right(new SideEffect));
+                $say
+                    ->expects($this->once())
+                    ->method('wait')
+                    ->willReturn(Either::right(new SideEffect));
+                $console = Console::of(
+                    Environment\InMemory::of(
+                        [],
+                        true,
+                        [],
+                        [],
+                        '/somewhere',
                     ),
-                    2 => $this->assertSame(
-                        "say 'Coding Standard : right'",
-                        $command->toString(),
-                    ),
-                };
+                    new Arguments,
+                    new Options,
+                );
 
-                if ($matcher->numberOfInvocations() === 1) {
-                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
-                        static fn($path) => $path->toString(),
-                        static fn() => null,
-                    ));
-                }
-
-                return match ($matcher->numberOfInvocations()) {
-                    1 => $cs,
-                    2 => $say,
-                };
+                $iteration->start();
+                $console = $trigger(
+                    $console,
+                    $os,
+                    $activity,
+                    Set::of(Triggers::codingStandard),
+                );
+                $console = $iteration->end($console);
+                $this->assertSame(
+                    ['some output', 'some error', "\033[2J\033[H"],
+                    $console->environment()->outputs(),
+                );
+                $this->assertSame(
+                    [],
+                    $console->environment()->errors(),
+                );
             });
-        $cs
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn(new Output\Output(Sequence::of(
-                [Str::of('some output'), Output\Type::output],
-                [Str::of('some error'), Output\Type::error],
-            )));
-        $cs
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
-        $say
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
-        $console = Console::of(
-            Environment\InMemory::of(
-                [],
-                true,
-                [],
-                [],
-                '/somewhere',
-            ),
-            new Arguments,
-            new Options,
-        );
-
-        $iteration->start();
-        $console = $trigger(
-            $console,
-            $os,
-            Activity::sourcesModified,
-            Set::of(Triggers::codingStandard),
-        );
-        $console = $iteration->end($console);
-        $this->assertSame(
-            ['some output', 'some error', "\033[2J\033[H"],
-            $console->environment()->outputs(),
-        );
-        $this->assertSame(
-            [],
-            $console->environment()->errors(),
-        );
     }
 
     public function testDoesnClearTerminalOnSuccessfullTestWhenSpecifiedOptionProvided()
@@ -354,110 +370,6 @@ class CodingStandardTest extends TestCase
         $console = $iteration->end($console);
         $this->assertSame([], $console->environment()->outputs());
         $this->assertSame([], $console->environment()->errors());
-    }
-
-    public function testTriggerTestsSuiteWhenTestsModified()
-    {
-        $trigger = new CodingStandard(
-            $iteration = new Iteration,
-        );
-
-        $os = $this->createMock(OperatingSystem::class);
-        $server = $this->createMock(Server::class);
-        $processes = $this->createMock(Processes::class);
-        $filesystem = $this->createMock(Filesystem::class);
-        $adapter = Adapter\InMemory::new();
-        $adapter->add(File::named(
-            '.php_cs.dist',
-            Content::none(),
-        ));
-
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->with(Path::of('/somewhere/'))
-            ->willReturn($adapter);
-        $cs = $this->createMock(Process::class);
-        $say = $this->createMock(Process::class);
-        $os
-            ->method('control')
-            ->willReturn($server);
-        $server
-            ->method('processes')
-            ->willReturn($processes);
-        $processes
-            ->expects($matcher = $this->exactly(2))
-            ->method('execute')
-            ->willReturnCallback(function($command) use ($matcher, $cs, $say) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertSame(
-                        "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
-                        $command->toString(),
-                    ),
-                    2 => $this->assertSame(
-                        "say 'Coding Standard : right'",
-                        $command->toString(),
-                    ),
-                };
-
-                if ($matcher->numberOfInvocations() === 1) {
-                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
-                        static fn($path) => $path->toString(),
-                        static fn() => null,
-                    ));
-                }
-
-                return match ($matcher->numberOfInvocations()) {
-                    1 => $cs,
-                    2 => $say,
-                };
-            });
-        $cs
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn(new Output\Output(Sequence::of(
-                [Str::of('some output'), Output\Type::output],
-                [Str::of('some error'), Output\Type::error],
-            )));
-        $cs
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
-        $say
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
-        $console = Console::of(
-            Environment\InMemory::of(
-                [],
-                true,
-                [],
-                [],
-                '/somewhere',
-            ),
-            new Arguments,
-            new Options,
-        );
-
-        $iteration->start();
-        $console = $trigger(
-            $console,
-            $os,
-            Activity::testsModified,
-            Set::of(Triggers::codingStandard),
-        );
-        $console = $iteration->end($console);
-        $this->assertSame(
-            ['some output', 'some error', "\033[2J\033[H"],
-            $console->environment()->outputs(),
-        );
-        $this->assertSame(
-            [],
-            $console->environment()->errors(),
-        );
     }
 
     public function testTriggerForPHPCSFixer3()
