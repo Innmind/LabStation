@@ -20,7 +20,7 @@ final class WatchProperties implements Agent
         Path $project,
         Activities $activities,
     ): ?Agent {
-        $properties = $project->resolve(Path::of('properties'));
+        $properties = $project->resolve(Path::of('properties/'));
         $filesystem = $os->filesystem();
 
         if (!$filesystem->contains($properties)) {

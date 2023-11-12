@@ -20,7 +20,7 @@ final class WatchFixtures implements Agent
         Path $project,
         Activities $activities,
     ): ?Agent {
-        $fixtures = $project->resolve(Path::of('fixtures'));
+        $fixtures = $project->resolve(Path::of('fixtures/'));
         $filesystem = $os->filesystem();
 
         if (!$filesystem->contains($fixtures)) {

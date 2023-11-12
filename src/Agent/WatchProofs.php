@@ -20,7 +20,7 @@ final class WatchProofs implements Agent
         Path $project,
         Activities $activities,
     ): ?Agent {
-        $proofs = $project->resolve(Path::of('proofs'));
+        $proofs = $project->resolve(Path::of('proofs/'));
         $filesystem = $os->filesystem();
 
         if (!$filesystem->contains($proofs)) {
