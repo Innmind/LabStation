@@ -11,11 +11,12 @@ use Innmind\LabStation\{
     Activity\Type,
     Iteration,
 };
-use Innmind\Server\Control\Server\{
-    Processes,
-    Process,
-    Process\Output,
-    Process\ExitCode,
+use Innmind\Server\Control\{
+    Server,
+    Server\Processes,
+    Server\Process,
+    Server\Process\Output,
+    Server\Process\ExitCode,
 };
 use Innmind\CLI\{
     Environment,
@@ -24,11 +25,14 @@ use Innmind\CLI\{
     Command\Options,
 };
 use Innmind\Url\Path;
-use Innmind\OperatingSystem\Filesystem;
+use Innmind\OperatingSystem\{
+    OperatingSystem,
+    Filesystem,
+};
 use Innmind\Filesystem\{
     Adapter,
     Name,
-    File\File,
+    File,
     File\Content,
 };
 use Innmind\Immutable\{
@@ -47,24 +51,20 @@ class PsalmTest extends TestCase
     {
         $this->assertInstanceOf(
             Trigger::class,
-            new Psalm(
-                $this->createMock(Processes::class),
-                $this->createMock(Filesystem::class),
-                new Iteration,
-            ),
+            new Psalm(new Iteration),
         );
     }
 
     public function testDoNothingWhenNotOfExpectedType()
     {
-        $trigger = new Psalm(
-            $processes = $this->createMock(Processes::class),
-            $this->createMock(Filesystem::class),
-            new Iteration,
-        );
-        $processes
+        $trigger = new Psalm(new Iteration);
+        $os = $this->createMock(OperatingSystem::class);
+        $os
             ->expects($this->never())
-            ->method('execute');
+            ->method('filesystem');
+        $os
+            ->expects($this->never())
+            ->method('control');
         $console = Console::of(
             $this->createMock(Environment::class),
             new Arguments,
@@ -72,26 +72,29 @@ class PsalmTest extends TestCase
         );
 
         $this->assertSame($console, $trigger(
-            new Activity(Type::start),
             $console,
+            $os,
+            Activity::start,
             Set::of(Triggers::psalm),
         ));
     }
 
     public function testDoNothingWhenPsalmNotInstalled()
     {
-        $trigger = new Psalm(
-            $processes = $this->createMock(Processes::class),
-            $filesystem = $this->createMock(Filesystem::class),
-            new Iteration,
-        );
+        $trigger = new Psalm(new Iteration);
+        $os = $this->createMock(OperatingSystem::class);
+        $filesystem = $this->createMock(Filesystem::class);
+
+        $os
+            ->method('filesystem')
+            ->willReturn($filesystem);
         $filesystem
             ->expects($this->once())
             ->method('mount')
             ->willReturn(Adapter\InMemory::new());
-        $processes
+        $os
             ->expects($this->never())
-            ->method('execute');
+            ->method('control');
         $console = Console::of(
             Environment\InMemory::of(
                 [],
@@ -105,25 +108,23 @@ class PsalmTest extends TestCase
         );
 
         $this->assertSame($console, $trigger(
-            new Activity(Type::sourcesModified),
             $console,
+            $os,
+            Activity::sourcesModified,
             Set::of(Triggers::psalm),
         ));
     }
 
     public function testDoNothingWhenTriggerNotEnabled()
     {
-        $trigger = new Psalm(
-            $processes = $this->createMock(Processes::class),
-            $filesystem = $this->createMock(Filesystem::class),
-            new Iteration,
-        );
-        $filesystem
+        $trigger = new Psalm(new Iteration);
+        $os = $this->createMock(OperatingSystem::class);
+        $os
             ->expects($this->never())
-            ->method('mount');
-        $processes
+            ->method('filesystem');
+        $os
             ->expects($this->never())
-            ->method('execute');
+            ->method('control');
         $console = Console::of(
             Environment\InMemory::of(
                 [],
@@ -137,8 +138,9 @@ class PsalmTest extends TestCase
         );
 
         $console = $trigger(
-            new Activity(Type::sourcesModified),
             $console,
+            $os,
+            Activity::sourcesModified,
             Set::of(),
         );
         $this->assertSame(
@@ -154,15 +156,21 @@ class PsalmTest extends TestCase
     public function testTriggerTestsSuiteWhenSourcesModified()
     {
         $trigger = new Psalm(
-            $processes = $this->createMock(Processes::class),
-            $filesystem = $this->createMock(Filesystem::class),
             $iteration = new Iteration,
         );
+        $os = $this->createMock(OperatingSystem::class);
+        $server = $this->createMock(Server::class);
+        $processes = $this->createMock(Processes::class);
+        $filesystem = $this->createMock(Filesystem::class);
         $adapter = Adapter\InMemory::new();
         $adapter->add(File::named(
             'psalm.xml',
-            Content\None::of(),
+            Content::none(),
         ));
+
+        $os
+            ->method('filesystem')
+            ->willReturn($filesystem);
         $filesystem
             ->expects($this->once())
             ->method('mount')
@@ -170,6 +178,12 @@ class PsalmTest extends TestCase
             ->willReturn($adapter);
         $psalm = $this->createMock(Process::class);
         $say = $this->createMock(Process::class);
+        $os
+            ->method('control')
+            ->willReturn($server);
+        $server
+            ->method('processes')
+            ->willReturn($processes);
         $processes
             ->expects($matcher = $this->exactly(2))
             ->method('execute')
@@ -228,8 +242,9 @@ class PsalmTest extends TestCase
 
         $iteration->start();
         $console = $trigger(
-            new Activity(Type::sourcesModified),
             $console,
+            $os,
+            Activity::sourcesModified,
             Set::of(Triggers::psalm),
         );
         $console = $iteration->end($console);
@@ -246,15 +261,21 @@ class PsalmTest extends TestCase
     public function testDoesnClearTerminalOnSuccessfullTestWhenSpecifiedOptionProvided()
     {
         $trigger = new Psalm(
-            $processes = $this->createMock(Processes::class),
-            $filesystem = $this->createMock(Filesystem::class),
             $iteration = new Iteration,
         );
+        $os = $this->createMock(OperatingSystem::class);
+        $server = $this->createMock(Server::class);
+        $processes = $this->createMock(Processes::class);
+        $filesystem = $this->createMock(Filesystem::class);
         $adapter = Adapter\InMemory::new();
         $adapter->add(File::named(
             'psalm.xml',
-            Content\None::of(),
+            Content::none(),
         ));
+
+        $os
+            ->method('filesystem')
+            ->willReturn($filesystem);
         $filesystem
             ->expects($this->once())
             ->method('mount')
@@ -262,6 +283,12 @@ class PsalmTest extends TestCase
             ->willReturn($adapter);
         $psalm = $this->createMock(Process::class);
         $say = $this->createMock(Process::class);
+        $os
+            ->method('control')
+            ->willReturn($server);
+        $server
+            ->method('processes')
+            ->willReturn($processes);
         $processes
             ->expects($matcher = $this->exactly(2))
             ->method('execute')
@@ -315,8 +342,9 @@ class PsalmTest extends TestCase
 
         $iteration->start();
         $console = $trigger(
-            new Activity(Type::sourcesModified),
             $console,
+            $os,
+            Activity::sourcesModified,
             Set::of(Triggers::psalm),
         );
         $console = $iteration->end($console);
@@ -326,15 +354,21 @@ class PsalmTest extends TestCase
     public function testTriggerTestsSuiteWhenTestsModified()
     {
         $trigger = new Psalm(
-            $processes = $this->createMock(Processes::class),
-            $filesystem = $this->createMock(Filesystem::class),
             $iteration = new Iteration,
         );
+        $os = $this->createMock(OperatingSystem::class);
+        $server = $this->createMock(Server::class);
+        $processes = $this->createMock(Processes::class);
+        $filesystem = $this->createMock(Filesystem::class);
         $adapter = Adapter\InMemory::new();
         $adapter->add(File::named(
             'psalm.xml',
-            Content\None::of(),
+            Content::none(),
         ));
+
+        $os
+            ->method('filesystem')
+            ->willReturn($filesystem);
         $filesystem
             ->expects($this->once())
             ->method('mount')
@@ -342,6 +376,12 @@ class PsalmTest extends TestCase
             ->willReturn($adapter);
         $psalm = $this->createMock(Process::class);
         $say = $this->createMock(Process::class);
+        $os
+            ->method('control')
+            ->willReturn($server);
+        $server
+            ->method('processes')
+            ->willReturn($processes);
         $processes
             ->expects($matcher = $this->exactly(2))
             ->method('execute')
@@ -400,8 +440,9 @@ class PsalmTest extends TestCase
 
         $iteration->start();
         $console = $trigger(
-            new Activity(Type::testsModified),
             $console,
+            $os,
+            Activity::testsModified,
             Set::of(Triggers::psalm),
         );
         $console = $iteration->end($console);
@@ -418,15 +459,21 @@ class PsalmTest extends TestCase
     public function testSaidMessageIsChangedWhenTestsAreFailing()
     {
         $trigger = new Psalm(
-            $processes = $this->createMock(Processes::class),
-            $filesystem = $this->createMock(Filesystem::class),
             $iteration = new Iteration,
         );
+        $os = $this->createMock(OperatingSystem::class);
+        $server = $this->createMock(Server::class);
+        $processes = $this->createMock(Processes::class);
+        $filesystem = $this->createMock(Filesystem::class);
         $adapter = Adapter\InMemory::new();
         $adapter->add(File::named(
             'psalm.xml',
-            Content\None::of(),
+            Content::none(),
         ));
+
+        $os
+            ->method('filesystem')
+            ->willReturn($filesystem);
         $filesystem
             ->expects($this->once())
             ->method('mount')
@@ -434,6 +481,12 @@ class PsalmTest extends TestCase
             ->willReturn($adapter);
         $psalm = $this->createMock(Process::class);
         $say = $this->createMock(Process::class);
+        $os
+            ->method('control')
+            ->willReturn($server);
+        $server
+            ->method('processes')
+            ->willReturn($processes);
         $processes
             ->expects($matcher = $this->exactly(2))
             ->method('execute')
@@ -487,8 +540,9 @@ class PsalmTest extends TestCase
 
         $iteration->start();
         $console = $trigger(
-            new Activity(Type::sourcesModified),
             $console,
+            $os,
+            Activity::sourcesModified,
             Set::of(Triggers::psalm),
         );
         $console = $iteration->end($console);
@@ -498,20 +552,32 @@ class PsalmTest extends TestCase
     public function testNoMessageIsSpokenWhenUsingTheSilentOption()
     {
         $trigger = new Psalm(
-            $processes = $this->createMock(Processes::class),
-            $filesystem = $this->createMock(Filesystem::class),
             $iteration = new Iteration,
         );
+        $os = $this->createMock(OperatingSystem::class);
+        $server = $this->createMock(Server::class);
+        $processes = $this->createMock(Processes::class);
+        $filesystem = $this->createMock(Filesystem::class);
         $adapter = Adapter\InMemory::new();
         $adapter->add(File::named(
             'psalm.xml',
-            Content\None::of(),
+            Content::none(),
         ));
+
+        $os
+            ->method('filesystem')
+            ->willReturn($filesystem);
         $filesystem
             ->expects($this->once())
             ->method('mount')
             ->with(Path::of('/somewhere/'))
             ->willReturn($adapter);
+        $os
+            ->method('control')
+            ->willReturn($server);
+        $server
+            ->method('processes')
+            ->willReturn($processes);
         $processes
             ->expects($this->once())
             ->method('execute')
@@ -545,8 +611,9 @@ class PsalmTest extends TestCase
 
         $iteration->start();
         $console = $trigger(
-            new Activity(Type::sourcesModified),
             $console,
+            $os,
+            Activity::sourcesModified,
             Set::of(Triggers::psalm),
         );
         $console = $iteration->end($console);

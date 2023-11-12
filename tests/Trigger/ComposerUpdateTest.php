@@ -8,12 +8,13 @@ use Innmind\LabStation\{
     Trigger,
     Triggers,
     Activity,
-    Activity\Type,
 };
-use Innmind\Server\Control\Server\{
-    Processes,
-    Process,
-    Process\Output,
+use Innmind\OperatingSystem\OperatingSystem;
+use Innmind\Server\Control\{
+    Server,
+    Server\Processes,
+    Server\Process,
+    Server\Process\Output,
 };
 use Innmind\CLI\{
     Environment,
@@ -34,20 +35,18 @@ class ComposerUpdateTest extends TestCase
     {
         $this->assertInstanceOf(
             Trigger::class,
-            new ComposerUpdate(
-                $this->createMock(Processes::class),
-            ),
+            new ComposerUpdate,
         );
     }
 
     public function testDoNothingWhenNotOfExpectedType()
     {
-        $trigger = new ComposerUpdate(
-            $processes = $this->createMock(Processes::class),
-        );
-        $processes
+        $trigger = new ComposerUpdate;
+
+        $os = $this->createMock(OperatingSystem::class);
+        $os
             ->expects($this->never())
-            ->method('execute');
+            ->method('control');
         $console = Console::of(
             Environment\InMemory::of(
                 [],
@@ -61,20 +60,21 @@ class ComposerUpdateTest extends TestCase
         );
 
         $this->assertSame($console, $trigger(
-            new Activity(Type::sourcesModified),
             $console,
+            $os,
+            Activity::sourcesModified,
             Set::of(Triggers::composerUpdate),
         ));
     }
 
     public function testDoNothingWhenTriggerNotEnabled()
     {
-        $trigger = new ComposerUpdate(
-            $processes = $this->createMock(Processes::class),
-        );
-        $processes
+        $trigger = new ComposerUpdate;
+
+        $os = $this->createMock(OperatingSystem::class);
+        $os
             ->expects($this->never())
-            ->method('execute');
+            ->method('control');
         $console = Console::of(
             Environment\InMemory::of(
                 ["\n"],
@@ -88,8 +88,9 @@ class ComposerUpdateTest extends TestCase
         );
 
         $console = $trigger(
-            new Activity(Type::start),
             $console,
+            $os,
+            Activity::start,
             Set::of(),
         );
         $this->assertSame(
@@ -104,9 +105,18 @@ class ComposerUpdateTest extends TestCase
 
     public function testTriggerUpdateOnStart()
     {
-        $trigger = new ComposerUpdate(
-            $processes = $this->createMock(Processes::class),
-        );
+        $trigger = new ComposerUpdate;
+
+        $os = $this->createMock(OperatingSystem::class);
+        $server = $this->createMock(Server::class);
+        $processes = $this->createMock(Processes::class);
+
+        $os
+            ->method('control')
+            ->willReturn($server);
+        $server
+            ->method('processes')
+            ->willReturn($processes);
         $processes
             ->expects($this->once())
             ->method('execute')
@@ -138,8 +148,9 @@ class ComposerUpdateTest extends TestCase
         );
 
         $console = $trigger(
-            new Activity(Type::start),
             $console,
+            $os,
+            Activity::start,
             Set::of(Triggers::composerUpdate),
         );
         $this->assertSame(
@@ -154,12 +165,12 @@ class ComposerUpdateTest extends TestCase
 
     public function testDoesntTriggerUpdateWhenNegativeResponse()
     {
-        $trigger = new ComposerUpdate(
-            $processes = $this->createMock(Processes::class),
-        );
-        $processes
+        $trigger = new ComposerUpdate;
+
+        $os = $this->createMock(OperatingSystem::class);
+        $os
             ->expects($this->never())
-            ->method('execute');
+            ->method('control');
         $console = Console::of(
             Environment\InMemory::of(
                 ["n\n"],
@@ -173,8 +184,9 @@ class ComposerUpdateTest extends TestCase
         );
 
         $console = $trigger(
-            new Activity(Type::start),
             $console,
+            $os,
+            Activity::start,
             Set::of(Triggers::composerUpdate),
         );
         $this->assertSame(

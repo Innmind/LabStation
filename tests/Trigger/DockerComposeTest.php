@@ -8,12 +8,15 @@ use Innmind\LabStation\{
     Trigger,
     Triggers,
     Activity,
-    Activity\Type,
 };
-use Innmind\OperatingSystem\Filesystem;
-use Innmind\Server\Control\Server\{
-    Processes,
-    Process,
+use Innmind\OperatingSystem\{
+    OperatingSystem,
+    Filesystem,
+};
+use Innmind\Server\Control\{
+    Server,
+    Server\Processes,
+    Server\Process,
 };
 use Innmind\CLI\{
     Environment,
@@ -24,7 +27,7 @@ use Innmind\CLI\{
 use Innmind\Filesystem\{
     Adapter,
     Name,
-    File\File,
+    File,
     File\Content,
 };
 use Innmind\Url\Path;
@@ -41,25 +44,21 @@ class DockerComposeTest extends TestCase
     {
         $this->assertInstanceOf(
             Trigger::class,
-            new DockerCompose(
-                $this->createMock(Filesystem::class),
-                $this->createMock(Processes::class),
-            ),
+            new DockerCompose,
         );
     }
 
     public function testDoesntStartDockerComposeWhenNotStartActivity()
     {
-        $trigger = new DockerCompose(
-            $filesystem = $this->createMock(Filesystem::class),
-            $processes = $this->createMock(Processes::class),
-        );
-        $filesystem
+        $trigger = new DockerCompose;
+
+        $os = $this->createMock(OperatingSystem::class);
+        $os
             ->expects($this->never())
-            ->method('mount');
-        $processes
+            ->method('filesystem');
+        $os
             ->expects($this->never())
-            ->method('execute');
+            ->method('control');
         $console = Console::of(
             $this->createMock(Environment::class),
             new Arguments,
@@ -67,26 +66,31 @@ class DockerComposeTest extends TestCase
         );
 
         $this->assertSame($console, $trigger(
-            new Activity(Type::sourcesModified),
             $console,
+            $os,
+            Activity::sourcesModified,
             Set::of(Triggers::dockerCompose),
         ));
     }
 
     public function testDoesntStartDockerComposeWhenNoConfigFile()
     {
-        $trigger = new DockerCompose(
-            $filesystem = $this->createMock(Filesystem::class),
-            $processes = $this->createMock(Processes::class),
-        );
+        $trigger = new DockerCompose;
+
+        $os = $this->createMock(OperatingSystem::class);
+        $filesystem = $this->createMock(Filesystem::class);
+
+        $os
+            ->method('filesystem')
+            ->willReturn($filesystem);
         $filesystem
             ->expects($this->once())
             ->method('mount')
             ->with(Path::of('/path/to/project/vendor/package/'))
             ->willReturn(Adapter\InMemory::new());
-        $processes
+        $os
             ->expects($this->never())
-            ->method('execute');
+            ->method('control');
         $console = Console::of(
             Environment\InMemory::of(
                 [],
@@ -100,24 +104,24 @@ class DockerComposeTest extends TestCase
         );
 
         $this->assertSame($console, $trigger(
-            new Activity(Type::start),
             $console,
+            $os,
+            Activity::start,
             Set::of(Triggers::dockerCompose),
         ));
     }
 
     public function testDoNothingWhenTriggerNotEnabled()
     {
-        $trigger = new DockerCompose(
-            $filesystem = $this->createMock(Filesystem::class),
-            $processes = $this->createMock(Processes::class),
-        );
-        $filesystem
+        $trigger = new DockerCompose;
+
+        $os = $this->createMock(OperatingSystem::class);
+        $os
             ->expects($this->never())
-            ->method('mount');
-        $processes
+            ->method('filesystem');
+        $os
             ->expects($this->never())
-            ->method('execute');
+            ->method('control');
         $console = Console::of(
             Environment\InMemory::of(
                 [],
@@ -131,8 +135,9 @@ class DockerComposeTest extends TestCase
         );
 
         $console = $trigger(
-            new Activity(Type::start),
             $console,
+            $os,
+            Activity::start,
             Set::of(),
         );
         $this->assertSame(
@@ -147,20 +152,32 @@ class DockerComposeTest extends TestCase
 
     public function testStartDockerCompose()
     {
-        $trigger = new DockerCompose(
-            $filesystem = $this->createMock(Filesystem::class),
-            $processes = $this->createMock(Processes::class),
-        );
+        $trigger = new DockerCompose;
+
+        $os = $this->createMock(OperatingSystem::class);
+        $filesystem = $this->createMock(Filesystem::class);
+        $server = $this->createMock(Server::class);
+        $processes = $this->createMock(Processes::class);
         $project = Adapter\InMemory::new();
         $project->add(File::named(
             'docker-compose.yml',
-            Content\None::of(),
+            Content::none(),
         ));
+
+        $os
+            ->method('filesystem')
+            ->willReturn($filesystem);
         $filesystem
             ->expects($this->once())
             ->method('mount')
             ->with(Path::of('/path/to/project/vendor/package/'))
             ->willReturn($project);
+        $os
+            ->method('control')
+            ->willReturn($server);
+        $server
+            ->method('processes')
+            ->willReturn($processes);
         $processes
             ->expects($this->once())
             ->method('execute')
@@ -189,8 +206,9 @@ class DockerComposeTest extends TestCase
         );
 
         $this->assertSame($console, $trigger(
-            new Activity(Type::start),
             $console,
+            $os,
+            Activity::start,
             Set::of(Triggers::dockerCompose),
         ));
     }

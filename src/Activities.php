@@ -85,4 +85,14 @@ final class Activities
 
         return $this;
     }
+
+    /**
+     * Used for tests only
+     *
+     * @return list<Activity>
+     */
+    public function toList(): array
+    {
+        return $this->activities;
+    }
 }
