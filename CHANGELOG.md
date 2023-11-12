@@ -10,6 +10,7 @@
 
 - Tests are no longer run when the `proofs` or `properties` directories are modified
 - Proofs are no longer run when the `tests` directory is modified
+- Psalm is no longer run when the `tests` directory is modified
 
 ### Fixed
 

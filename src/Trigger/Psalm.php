@@ -39,7 +39,6 @@ final class Psalm implements Trigger
 
         return match ($activity) {
             Activity::sourcesModified => $this->attempt($console, $os),
-            Activity::testsModified => $this->attempt($console, $os),
             default => $console,
         };
     }
