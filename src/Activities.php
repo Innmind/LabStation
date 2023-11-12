@@ -57,7 +57,10 @@ final class Activities
                 $activity,
                 $this->triggers,
             );
-            $console = $this->iteration->end($console);
+
+            if ($activity !== Activity::start) {
+                $console = $this->iteration->end($console);
+            }
         }
 
         return $console;
