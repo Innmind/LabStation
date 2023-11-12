@@ -87,12 +87,7 @@ class BlackBoxTest extends TestCase
     public function testDoNothingWhenTriggerNotEnabled()
     {
         $this
-            ->forAll(Set\Elements::of(
-                Activity::sourcesModified,
-                Activity::testsModified,
-                Activity::fixturesModified,
-                Activity::propertiesModified,
-            ))
+            ->forAll(Set\Elements::of(...Activity::cases()))
             ->then(function($type) {
                 $trigger = new BlackBox(new Iteration);
 
@@ -137,7 +132,7 @@ class BlackBoxTest extends TestCase
         $this
             ->forAll(Set\Elements::of(
                 Activity::sourcesModified,
-                Activity::testsModified,
+                Activity::proofsModified,
                 Activity::fixturesModified,
                 Activity::propertiesModified,
             ))
@@ -233,7 +228,7 @@ class BlackBoxTest extends TestCase
                     $console,
                     $os,
                     $type,
-                    ISet::of(Triggers::tests),
+                    ISet::of(Triggers::proofs),
                 );
                 $console = $iteration->end($console);
                 $this->assertSame(
@@ -247,12 +242,12 @@ class BlackBoxTest extends TestCase
             });
     }
 
-    public function testDoesntTriggerWhenNoPHPUnitFile()
+    public function testDoesntTriggerWhenNoBlackBoxFile()
     {
         $this
             ->forAll(Set\Elements::of(
                 Activity::sourcesModified,
-                Activity::testsModified,
+                Activity::proofsModified,
                 Activity::fixturesModified,
                 Activity::propertiesModified,
             ))
@@ -292,7 +287,7 @@ class BlackBoxTest extends TestCase
                     $console,
                     $os,
                     $type,
-                    ISet::of(Triggers::tests),
+                    ISet::of(Triggers::proofs),
                 );
                 $console = $iteration->end($console);
                 $this->assertSame(
@@ -393,7 +388,7 @@ class BlackBoxTest extends TestCase
             $console,
             $os,
             Activity::sourcesModified,
-            ISet::of(Triggers::tests),
+            ISet::of(Triggers::proofs),
         );
         $console = $iteration->end($console);
         $this->assertSame([], $console->environment()->outputs());
@@ -486,7 +481,7 @@ class BlackBoxTest extends TestCase
             $console,
             $os,
             Activity::sourcesModified,
-            ISet::of(Triggers::tests),
+            ISet::of(Triggers::proofs),
         );
         $console = $iteration->end($console);
         $this->assertSame([], $console->environment()->outputs());
@@ -557,7 +552,7 @@ class BlackBoxTest extends TestCase
             $console,
             $os,
             Activity::sourcesModified,
-            ISet::of(Triggers::tests),
+            ISet::of(Triggers::proofs),
         );
         $console = $iteration->end($console);
         $this->assertSame(["\033[2J\033[H"], $console->environment()->outputs());

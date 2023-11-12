@@ -33,13 +33,13 @@ final class BlackBox implements Trigger
         Activity $activity,
         Set $triggers,
     ): Console {
-        if (!$triggers->contains(Triggers::tests)) {
+        if (!$triggers->contains(Triggers::proofs)) {
             return $console;
         }
 
         return match ($activity) {
             Activity::sourcesModified => $this->attempt($console, $os),
-            Activity::testsModified => $this->attempt($console, $os),
+            Activity::proofsModified => $this->attempt($console, $os),
             Activity::fixturesModified => $this->attempt($console, $os),
             Activity::propertiesModified => $this->attempt($console, $os),
             default => $console,

@@ -88,12 +88,7 @@ class TestsTest extends TestCase
     public function testDoNothingWhenTriggerNotEnabled()
     {
         $this
-            ->forAll(Set\Elements::of(
-                Activity::sourcesModified,
-                Activity::testsModified,
-                Activity::fixturesModified,
-                Activity::propertiesModified,
-            ))
+            ->forAll(Set\Elements::of(...Activity::cases()))
             ->then(function($type) {
                 $trigger = new Tests(new Iteration);
                 $os = $this->createMock(OperatingSystem::class);

@@ -74,7 +74,7 @@ class WatchProofsTest extends TestCase
         $this->assertEquals(
             [
                 Activity::start,
-                Activity::testsModified,
+                Activity::proofsModified,
             ],
             $activities->toList(),
         );

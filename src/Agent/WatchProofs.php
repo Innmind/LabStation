@@ -29,7 +29,7 @@ final class WatchProofs implements Agent
         $filesystem->watch($proofs)(
             $activities,
             static fn(Activities $activities) => Either::right( // right in order to have an infinite loop
-                $activities->push(Activity::testsModified),
+                $activities->push(Activity::proofsModified),
             ),
         );
 

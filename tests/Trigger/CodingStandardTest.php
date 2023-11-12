@@ -81,7 +81,7 @@ class CodingStandardTest extends TestCase
         ));
     }
 
-    public function testDoNothingWhenPsalmNotInstalled()
+    public function testDoNothingWhenToolNotInstalled()
     {
         $trigger = new CodingStandard(new Iteration);
 
