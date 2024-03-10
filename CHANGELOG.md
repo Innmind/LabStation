@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.1.0 - 2024-03-10
+
+### Changed
+
+- Requires `innmind/operating-system:~5.0`
+
 ## 4.0.0 - 2023-11-12
 
 ### Added

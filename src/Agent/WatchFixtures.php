@@ -10,7 +10,6 @@ use Innmind\LabStation\{
 };
 use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\Url\Path;
-use Innmind\Immutable\Either;
 
 final class WatchFixtures implements Agent
 {
@@ -28,7 +27,7 @@ final class WatchFixtures implements Agent
 
         $filesystem->watch($fixtures)(
             $activities,
-            static fn(Activities $activities) => Either::right( // right in order to have an infinite loop
+            static fn(Activities $activities, $continuation) => $continuation->continue(
                 $activities->push(Activity::fixturesModified),
             ),
         );

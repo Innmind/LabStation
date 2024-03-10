@@ -10,7 +10,6 @@ use Innmind\LabStation\{
 };
 use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\Url\Path;
-use Innmind\Immutable\Either;
 
 final class WatchProofs implements Agent
 {
@@ -28,7 +27,7 @@ final class WatchProofs implements Agent
 
         $filesystem->watch($proofs)(
             $activities,
-            static fn(Activities $activities) => Either::right( // right in order to have an infinite loop
+            static fn(Activities $activities, $continuation) => $continuation->continue(
                 $activities->push(Activity::proofsModified),
             ),
         );

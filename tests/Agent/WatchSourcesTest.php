@@ -16,10 +16,13 @@ use Innmind\OperatingSystem\{
     OperatingSystem,
     Filesystem,
 };
-use Innmind\FileWatch\Ping;
+use Innmind\FileWatch\{
+    Ping,
+    Continuation,
+};
 use Innmind\Url\Path;
 use Innmind\Immutable\{
-    Either,
+    Maybe,
     Set,
 };
 use PHPUnit\Framework\TestCase;
@@ -59,11 +62,11 @@ class WatchSourcesTest extends TestCase
             ->expects($this->once())
             ->method('__invoke')
             ->with($activities, $this->callback(static function($listen) use ($activities): bool {
-                $listen($activities); // simulate folder modification
+                $listen($activities, Continuation::of($activities)); // simulate folder modification
 
                 return true;
             }))
-            ->willReturn(Either::right($activities));
+            ->willReturn(Maybe::just($activities));
 
         $this->assertSame($agent, $agent($os, $project, $activities));
         $this->assertEquals(

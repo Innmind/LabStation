@@ -16,7 +16,6 @@ use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\Url\Path;
 use Innmind\Immutable\{
     Sequence,
-    Set,
     Predicate\Instance,
 };
 

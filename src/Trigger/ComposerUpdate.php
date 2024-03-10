@@ -13,10 +13,7 @@ use Innmind\CLI\{
     Question\Question,
 };
 use Innmind\OperatingSystem\OperatingSystem;
-use Innmind\Server\Control\Server\{
-    Command,
-    Process\Output,
-};
+use Innmind\Server\Control\Server\Command;
 use Innmind\Immutable\{
     Map,
     Str,

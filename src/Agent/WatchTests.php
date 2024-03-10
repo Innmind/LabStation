@@ -10,10 +10,6 @@ use Innmind\LabStation\{
 };
 use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\Url\Path;
-use Innmind\Immutable\{
-    Sequence,
-    Either,
-};
 
 final class WatchTests implements Agent
 {
@@ -31,7 +27,7 @@ final class WatchTests implements Agent
 
         $filesystem->watch($tests)(
             $activities,
-            static fn(Activities $activities) => Either::right( // right in order to have an infinite loop
+            static fn(Activities $activities, $continuation) => $continuation->continue(
                 $activities->push(Activity::testsModified),
             ),
         );

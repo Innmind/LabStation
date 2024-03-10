@@ -26,7 +26,6 @@ use Innmind\CLI\{
 };
 use Innmind\Filesystem\{
     Adapter,
-    Name,
     File,
     File\Content,
 };
