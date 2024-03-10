@@ -8,7 +8,6 @@ use Innmind\LabStation\{
     Trigger,
     Triggers,
     Activity,
-    Activity\Type,
     Iteration,
 };
 use Innmind\Server\Control\{
@@ -31,7 +30,6 @@ use Innmind\OperatingSystem\{
 };
 use Innmind\Filesystem\{
     Adapter,
-    Name,
     File,
     File\Content,
 };

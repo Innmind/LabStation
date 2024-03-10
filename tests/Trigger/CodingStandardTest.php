@@ -30,7 +30,6 @@ use Innmind\OperatingSystem\{
 };
 use Innmind\Filesystem\{
     Adapter,
-    Name,
     File,
     File\Content,
 };

@@ -8,7 +8,6 @@ use Innmind\LabStation\{
     Trigger,
     Triggers,
     Activity,
-    Activity\Type,
     Iteration,
 };
 use Innmind\OperatingSystem\{

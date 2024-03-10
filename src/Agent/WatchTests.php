@@ -10,10 +10,7 @@ use Innmind\LabStation\{
 };
 use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\Url\Path;
-use Innmind\Immutable\{
-    Sequence,
-    Either,
-};
+use Innmind\Immutable\Either;
 
 final class WatchTests implements Agent
 {
