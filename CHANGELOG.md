@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- The environment key `PHP_CS_FIXER_IGNORE_ENV` is forwarded to PHP CS Fixer when defined by the user.
+
 ## 4.1.0 - 2024-03-10
 
 ### Changed
