@@ -68,7 +68,11 @@ final class CodingStandard implements Trigger
         /** @var Map<non-empty-string, string> */
         $variables = $console
             ->variables()
-            ->filter(static fn($key) => $key === 'PATH');
+            ->filter(static fn($key) => \in_array(
+                $key,
+                ['PATH', 'PHP_CS_FIXER_IGNORE_ENV'],
+                true,
+            ));
 
         $command = Command::foreground('vendor/bin/php-cs-fixer')
             ->withArgument('fix')
