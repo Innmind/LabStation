@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.2.0 - 2025-02-09
+
+### Added
+
+- The environment key `PHP_CS_FIXER_IGNORE_ENV` is forwarded to PHP CS Fixer when defined by the user.
+- The environment key `LAB_STATION` is provided to the BlackBox process to allow to define a specific configuration in this environment.
+
 ## 4.1.0 - 2024-03-10
 
 ### Changed

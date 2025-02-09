@@ -67,7 +67,8 @@ final class BlackBox implements Trigger
                 $key,
                 ['PATH', 'LC_TERMINAL'],
                 true,
-            ));
+            ))
+            ->put('LAB_STATION', 'true');
 
         $process = $os
             ->control()
