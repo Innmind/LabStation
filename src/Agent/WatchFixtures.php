@@ -13,6 +13,7 @@ use Innmind\Url\Path;
 
 final class WatchFixtures implements Agent
 {
+    #[\Override]
     public function __invoke(
         OperatingSystem $os,
         Path $project,

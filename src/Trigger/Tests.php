@@ -27,6 +27,7 @@ final class Tests implements Trigger
         $this->iteration = $iteration;
     }
 
+    #[\Override]
     public function __invoke(
         Console $console,
         OperatingSystem $os,

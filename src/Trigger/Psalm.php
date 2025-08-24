@@ -27,6 +27,7 @@ final class Psalm implements Trigger
         $this->iteration = $iteration;
     }
 
+    #[\Override]
     public function __invoke(
         Console $console,
         OperatingSystem $os,

@@ -22,6 +22,7 @@ use Innmind\Immutable\{
 
 final class ComposerUpdate implements Trigger
 {
+    #[\Override]
     public function __invoke(
         Console $console,
         OperatingSystem $os,

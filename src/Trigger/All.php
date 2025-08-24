@@ -24,6 +24,7 @@ final class All implements Trigger
         $this->triggers = $triggers;
     }
 
+    #[\Override]
     public function __invoke(
         Console $console,
         OperatingSystem $os,

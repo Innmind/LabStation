@@ -25,6 +25,7 @@ final class Work implements Command
         $this->monitor = $monitor;
     }
 
+    #[\Override]
     public function __invoke(Console $console): Console
     {
         $triggers = $console
@@ -49,6 +50,7 @@ final class Work implements Command
     /**
      * @psalm-pure
      */
+    #[\Override]
     public function usage(): string
     {
         return <<<USAGE

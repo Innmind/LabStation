@@ -20,6 +20,7 @@ use Innmind\Immutable\{
 
 final class DockerCompose implements Trigger
 {
+    #[\Override]
     public function __invoke(
         Console $console,
         OperatingSystem $os,
