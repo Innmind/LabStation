@@ -86,7 +86,7 @@ class BlackBoxTest extends TestCase
     public function testDoNothingWhenTriggerNotEnabled()
     {
         $this
-            ->forAll(Set\Elements::of(...Activity::cases()))
+            ->forAll(Set::of(...Activity::cases()))
             ->then(function($type) {
                 $trigger = new BlackBox(new Iteration);
 
@@ -129,7 +129,7 @@ class BlackBoxTest extends TestCase
     public function testTriggerTestsSuiteWhenActivity()
     {
         $this
-            ->forAll(Set\Elements::of(
+            ->forAll(Set::of(
                 Activity::sourcesModified,
                 Activity::proofsModified,
                 Activity::fixturesModified,
@@ -244,7 +244,7 @@ class BlackBoxTest extends TestCase
     public function testDoesntTriggerWhenNoBlackBoxFile()
     {
         $this
-            ->forAll(Set\Elements::of(
+            ->forAll(Set::of(
                 Activity::sourcesModified,
                 Activity::proofsModified,
                 Activity::fixturesModified,

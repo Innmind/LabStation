@@ -88,7 +88,7 @@ class TestsTest extends TestCase
     public function testDoNothingWhenTriggerNotEnabled()
     {
         $this
-            ->forAll(Set\Elements::of(...Activity::cases()))
+            ->forAll(Set::of(...Activity::cases()))
             ->then(function($type) {
                 $trigger = new Tests(new Iteration);
                 $os = $this->createMock(OperatingSystem::class);
@@ -130,7 +130,7 @@ class TestsTest extends TestCase
     public function testTriggerTestsSuiteWhenActivity()
     {
         $this
-            ->forAll(Set\Elements::of(
+            ->forAll(Set::of(
                 Activity::sourcesModified,
                 Activity::testsModified,
                 Activity::fixturesModified,
@@ -243,7 +243,7 @@ class TestsTest extends TestCase
     public function testDoesntTriggerWhenNoPHPUnitFile()
     {
         $this
-            ->forAll(Set\Elements::of(
+            ->forAll(Set::of(
                 Activity::sourcesModified,
                 Activity::testsModified,
                 Activity::fixturesModified,

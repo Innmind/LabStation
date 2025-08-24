@@ -165,7 +165,7 @@ class CodingStandardTest extends TestCase
     public function testTriggerTestsSuiteWhenSourcesModified()
     {
         $this
-            ->forAll(DataSet\Elements::of(
+            ->forAll(DataSet::of(
                 Activity::sourcesModified,
                 Activity::proofsModified,
                 Activity::testsModified,
