@@ -51,6 +51,7 @@ final class Tests implements Trigger
         return $os
             ->filesystem()
             ->mount($console->workingDirectory())
+            ->unwrap()
             ->get(Name::of('phpunit.xml.dist'))
             ->match(
                 fn() => $this->run($console, $os),
@@ -74,13 +75,14 @@ final class Tests implements Trigger
                     ->withOption('fail-on-warning')
                     ->withWorkingDirectory($console->workingDirectory())
                     ->withEnvironments($variables),
-            );
+            )
+            ->unwrap();
         $console = $process
             ->output()
-            ->reduce(
-                $console,
-                static fn(Console $console, $line) => $console->output($line),
-            );
+            ->map(static fn($chunk) => $chunk->data())
+            ->sink($console)
+            ->attempt(static fn(Console $console, $line) => $console->output($line))
+            ->unwrap();
         $successful = $process->wait()->match(
             static fn() => true,
             static fn() => false,
@@ -105,7 +107,8 @@ final class Tests implements Trigger
                     },
                 ),
             )
-            ->wait()
+            ->either()
+            ->flatMap(static fn($process) => $process->wait())
             ->match(
                 static fn() => $console,
                 static fn() => $console,

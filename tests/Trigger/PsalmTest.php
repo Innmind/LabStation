@@ -12,10 +12,7 @@ use Innmind\LabStation\{
 };
 use Innmind\Server\Control\{
     Server,
-    Server\Processes,
-    Server\Process,
-    Server\Process\Output,
-    Server\Process\ExitCode,
+    Server\Process\Builder,
 };
 use Innmind\CLI\{
     Environment,
@@ -23,10 +20,9 @@ use Innmind\CLI\{
     Command\Arguments,
     Command\Options,
 };
-use Innmind\Url\Path;
 use Innmind\OperatingSystem\{
     OperatingSystem,
-    Filesystem,
+    Config,
 };
 use Innmind\Filesystem\{
     Adapter,
@@ -34,12 +30,9 @@ use Innmind\Filesystem\{
     File\Content,
 };
 use Innmind\Immutable\{
-    Sequence,
-    Str,
-    Either,
-    SideEffect,
     Map,
     Set,
+    Attempt,
 };
 use PHPUnit\Framework\TestCase;
 
@@ -56,15 +49,15 @@ class PsalmTest extends TestCase
     public function testDoNothingWhenNotOfExpectedType()
     {
         $trigger = new Psalm(new Iteration);
-        $os = $this->createMock(OperatingSystem::class);
-        $os
-            ->expects($this->never())
-            ->method('filesystem');
-        $os
-            ->expects($this->never())
-            ->method('control');
+        $os = OperatingSystem::new();
         $console = Console::of(
-            $this->createMock(Environment::class),
+            Environment::inMemory(
+                [],
+                true,
+                [],
+                [],
+                '/somewhere',
+            ),
             new Arguments,
             new Options,
         );
@@ -80,21 +73,13 @@ class PsalmTest extends TestCase
     public function testDoNothingWhenPsalmNotInstalled()
     {
         $trigger = new Psalm(new Iteration);
-        $os = $this->createMock(OperatingSystem::class);
-        $filesystem = $this->createMock(Filesystem::class);
+        $os = OperatingSystem::new(
+            Config::new()
+                ->mountFilesystemVia(static fn() => Attempt::result(Adapter::inMemory())),
+        );
 
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->willReturn(Adapter\InMemory::new());
-        $os
-            ->expects($this->never())
-            ->method('control');
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 [],
@@ -116,15 +101,9 @@ class PsalmTest extends TestCase
     public function testDoNothingWhenTriggerNotEnabled()
     {
         $trigger = new Psalm(new Iteration);
-        $os = $this->createMock(OperatingSystem::class);
-        $os
-            ->expects($this->never())
-            ->method('filesystem');
-        $os
-            ->expects($this->never())
-            ->method('control');
+        $os = OperatingSystem::new();
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 [],
@@ -143,11 +122,11 @@ class PsalmTest extends TestCase
         );
         $this->assertSame(
             [],
-            $console->environment()->outputs(),
-        );
-        $this->assertSame(
-            [],
-            $console->environment()->errors(),
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
         );
     }
 
@@ -156,78 +135,52 @@ class PsalmTest extends TestCase
         $trigger = new Psalm(
             $iteration = new Iteration,
         );
-        $os = $this->createMock(OperatingSystem::class);
-        $server = $this->createMock(Server::class);
-        $processes = $this->createMock(Processes::class);
-        $filesystem = $this->createMock(Filesystem::class);
-        $adapter = Adapter\InMemory::new();
-        $adapter->add(File::named(
+        $adapter = Adapter::inMemory();
+        $_ = $adapter->add(File::named(
             'psalm.xml',
             Content::none(),
-        ));
+        ))->unwrap();
 
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->with(Path::of('/somewhere/'))
-            ->willReturn($adapter);
-        $psalm = $this->createMock(Process::class);
-        $say = $this->createMock(Process::class);
-        $os
-            ->method('control')
-            ->willReturn($server);
-        $server
-            ->method('processes')
-            ->willReturn($processes);
-        $processes
-            ->expects($matcher = $this->exactly(2))
-            ->method('execute')
-            ->willReturnCallback(function($command) use ($matcher, $psalm, $say) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertSame(
-                        "vendor/bin/psalm '--no-cache'",
-                        $command->toString(),
-                    ),
-                    2 => $this->assertSame(
-                        "say 'Psalm : ok'",
-                        $command->toString(),
-                    ),
-                };
+        $count = 0;
+        $os = OperatingSystem::new(
+            Config::new()
+                ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                ->useServerControl(Server::via(
+                    function($command) use (&$count) {
+                        $this->assertSame(
+                            match ($count) {
+                                0 => "vendor/bin/psalm '--no-cache'",
+                                1 => "say 'Psalm : ok'",
+                            },
+                            $command->toString(),
+                        );
 
-                if ($matcher->numberOfInvocations() === 1) {
-                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
-                        static fn($path) => $path->toString(),
-                        static fn() => null,
-                    ));
-                }
+                        if ($count === 0) {
+                            $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                                static fn($path) => $path->toString(),
+                                static fn() => null,
+                            ));
+                        }
 
-                return match ($matcher->numberOfInvocations()) {
-                    1 => $psalm,
-                    2 => $say,
-                };
-            });
-        $psalm
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn(new Output\Output(Sequence::of(
-                [Str::of('some output'), Output\Type::output],
-                [Str::of('some error'), Output\Type::error],
-            )));
-        // we say here that psalm is successful even though we have an error in
-        // the output in order to verify the terminal is cleared on success
-        $psalm
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
-        $say
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
+                        $builder = Builder::foreground(2);
+                        // we say here that psalm is successful even though we have an error in
+                        // the output in order to verify the terminal is cleared on success
+                        $builder = match ($count) {
+                            0 => $builder->success([
+                                ['some output', 'output'],
+                                ['some error', 'error'],
+                            ]),
+                            1 => $builder,
+                        };
+                        ++$count;
+
+                        return Attempt::result($builder->build());
+                    },
+                )),
+        );
+
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 [],
@@ -248,11 +201,11 @@ class PsalmTest extends TestCase
         $console = $iteration->end($console);
         $this->assertSame(
             ['some output', 'some error', "\033[2J\033[H"],
-            $console->environment()->outputs(),
-        );
-        $this->assertSame(
-            [],
-            $console->environment()->errors(),
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
         );
     }
 
@@ -261,73 +214,44 @@ class PsalmTest extends TestCase
         $trigger = new Psalm(
             $iteration = new Iteration,
         );
-        $os = $this->createMock(OperatingSystem::class);
-        $server = $this->createMock(Server::class);
-        $processes = $this->createMock(Processes::class);
-        $filesystem = $this->createMock(Filesystem::class);
-        $adapter = Adapter\InMemory::new();
-        $adapter->add(File::named(
+        $adapter = Adapter::inMemory();
+        $_ = $adapter->add(File::named(
             'psalm.xml',
             Content::none(),
-        ));
+        ))->unwrap();
 
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->with(Path::of('/somewhere/'))
-            ->willReturn($adapter);
-        $psalm = $this->createMock(Process::class);
-        $say = $this->createMock(Process::class);
-        $os
-            ->method('control')
-            ->willReturn($server);
-        $server
-            ->method('processes')
-            ->willReturn($processes);
-        $processes
-            ->expects($matcher = $this->exactly(2))
-            ->method('execute')
-            ->willReturnCallback(function($command) use ($matcher, $psalm, $say) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertSame(
-                        "vendor/bin/psalm '--no-cache'",
-                        $command->toString(),
-                    ),
-                    2 => $this->assertSame(
-                        "say 'Psalm : ok'",
-                        $command->toString(),
-                    ),
-                };
+        $count = 0;
+        $os = OperatingSystem::new(
+            Config::new()
+                ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                ->useServerControl(Server::via(
+                    function($command) use (&$count) {
+                        $this->assertSame(
+                            match ($count) {
+                                0 => "vendor/bin/psalm '--no-cache'",
+                                1 => "say 'Psalm : ok'",
+                            },
+                            $command->toString(),
+                        );
 
-                if ($matcher->numberOfInvocations() === 1) {
-                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
-                        static fn($path) => $path->toString(),
-                        static fn() => null,
-                    ));
-                }
+                        if ($count === 0) {
+                            $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                                static fn($path) => $path->toString(),
+                                static fn() => null,
+                            ));
+                        }
 
-                return match ($matcher->numberOfInvocations()) {
-                    1 => $psalm,
-                    2 => $say,
-                };
-            });
-        $psalm
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn(new Output\Output(Sequence::of()));
-        $psalm
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
-        $say
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
+                        ++$count;
+
+                        return Attempt::result(
+                            Builder::foreground(2)->build(),
+                        );
+                    },
+                )),
+        );
+
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 ['--keep-output'],
@@ -346,7 +270,14 @@ class PsalmTest extends TestCase
             Set::of(Triggers::psalm),
         );
         $console = $iteration->end($console);
-        $this->assertSame([], $console->environment()->outputs());
+        $this->assertSame(
+            [],
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
+        );
     }
 
     public function testSaidMessageIsChangedWhenTestsAreFailing()
@@ -354,73 +285,47 @@ class PsalmTest extends TestCase
         $trigger = new Psalm(
             $iteration = new Iteration,
         );
-        $os = $this->createMock(OperatingSystem::class);
-        $server = $this->createMock(Server::class);
-        $processes = $this->createMock(Processes::class);
-        $filesystem = $this->createMock(Filesystem::class);
-        $adapter = Adapter\InMemory::new();
-        $adapter->add(File::named(
+        $adapter = Adapter::inMemory();
+        $_ = $adapter->add(File::named(
             'psalm.xml',
             Content::none(),
-        ));
+        ))->unwrap();
 
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->with(Path::of('/somewhere/'))
-            ->willReturn($adapter);
-        $psalm = $this->createMock(Process::class);
-        $say = $this->createMock(Process::class);
-        $os
-            ->method('control')
-            ->willReturn($server);
-        $server
-            ->method('processes')
-            ->willReturn($processes);
-        $processes
-            ->expects($matcher = $this->exactly(2))
-            ->method('execute')
-            ->willReturnCallback(function($command) use ($matcher, $psalm, $say) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertSame(
-                        "vendor/bin/psalm '--no-cache'",
-                        $command->toString(),
-                    ),
-                    2 => $this->assertSame(
-                        "say 'Psalm : failing'",
-                        $command->toString(),
-                    ),
-                };
+        $count = 0;
+        $os = OperatingSystem::new(
+            Config::new()
+                ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                ->useServerControl(Server::via(
+                    function($command) use (&$count) {
+                        $this->assertSame(
+                            match ($count) {
+                                0 => "vendor/bin/psalm '--no-cache'",
+                                1 => "say 'Psalm : failing'",
+                            },
+                            $command->toString(),
+                        );
 
-                if ($matcher->numberOfInvocations() === 1) {
-                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
-                        static fn($path) => $path->toString(),
-                        static fn() => null,
-                    ));
-                }
+                        if ($count === 0) {
+                            $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                                static fn($path) => $path->toString(),
+                                static fn() => null,
+                            ));
+                        }
 
-                return match ($matcher->numberOfInvocations()) {
-                    1 => $psalm,
-                    2 => $say,
-                };
-            });
-        $psalm
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn(new Output\Output(Sequence::of()));
-        $psalm
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::left(new ExitCode(1)));
-        $say
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
+                        $builder = Builder::foreground(2);
+                        $builder = match ($count) {
+                            0 => $builder->failed(),
+                            1 => $builder,
+                        };
+                        ++$count;
+
+                        return Attempt::result($builder->build());
+                    },
+                )),
+        );
+
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 [],
@@ -439,7 +344,14 @@ class PsalmTest extends TestCase
             Set::of(Triggers::psalm),
         );
         $console = $iteration->end($console);
-        $this->assertSame([], $console->environment()->outputs());
+        $this->assertSame(
+            [],
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
+        );
     }
 
     public function testNoMessageIsSpokenWhenUsingTheSilentOption()
@@ -447,51 +359,41 @@ class PsalmTest extends TestCase
         $trigger = new Psalm(
             $iteration = new Iteration,
         );
-        $os = $this->createMock(OperatingSystem::class);
-        $server = $this->createMock(Server::class);
-        $processes = $this->createMock(Processes::class);
-        $filesystem = $this->createMock(Filesystem::class);
-        $adapter = Adapter\InMemory::new();
-        $adapter->add(File::named(
+        $adapter = Adapter::inMemory();
+        $_ = $adapter->add(File::named(
             'psalm.xml',
             Content::none(),
-        ));
+        ))->unwrap();
 
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->with(Path::of('/somewhere/'))
-            ->willReturn($adapter);
-        $os
-            ->method('control')
-            ->willReturn($server);
-        $server
-            ->method('processes')
-            ->willReturn($processes);
-        $processes
-            ->expects($this->once())
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "vendor/bin/psalm '--no-cache'" &&
-                    '/somewhere/' === $command->workingDirectory()->match(
-                        static fn($path) => $path->toString(),
-                        static fn() => null,
-                    );
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
-        $process
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
-        $process
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn(new Output\Output(Sequence::of()));
+        $count = 0;
+        $os = OperatingSystem::new(
+            Config::new()
+                ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                ->useServerControl(Server::via(
+                    function($command) use (&$count) {
+                        $this->assertSame(
+                            match ($count) {
+                                0 => "vendor/bin/psalm '--no-cache'",
+                            },
+                            $command->toString(),
+                        );
+
+                        $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                            static fn($path) => $path->toString(),
+                            static fn() => null,
+                        ));
+
+                        ++$count;
+
+                        return Attempt::result(
+                            Builder::foreground(2)->build(),
+                        );
+                    },
+                )),
+        );
+
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 ['--silent'],
@@ -510,7 +412,13 @@ class PsalmTest extends TestCase
             Set::of(Triggers::psalm),
         );
         $console = $iteration->end($console);
-        $this->assertSame(["\033[2J\033[H"], $console->environment()->outputs());
-        $this->assertSame([], $console->environment()->errors());
+        $this->assertSame(
+            ["\033[2J\033[H"],
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
+        );
     }
 }

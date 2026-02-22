@@ -12,7 +12,7 @@ class BootstrapTest extends TestCase
 {
     public function testInvokation()
     {
-        $os = $this->createMock(OperatingSystem::class);
+        $os = OperatingSystem::new();
 
         $this->assertInstanceOf(Commands::class, bootstrap($os));
     }

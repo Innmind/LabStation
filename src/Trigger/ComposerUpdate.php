@@ -41,10 +41,11 @@ final class ComposerUpdate implements Trigger
 
     private function ask(Console $console, OperatingSystem $os): Console
     {
-        $ask = new Question('Update dependencies? [Y/n]');
-        [$response, $console] = $ask($console);
+        $ask = Question::of('Update dependencies? [Y/n]');
+        [$response, $console] = $ask($console)->unwrap();
 
         return $response
+            ->maybe()
             ->filter(static fn($response) => match ($response->toString()) {
                 'y', '' => true,
                 default => false,
@@ -72,11 +73,13 @@ final class ComposerUpdate implements Trigger
                     ->withWorkingDirectory($console->workingDirectory())
                     ->withEnvironments($variables),
             )
+            ->unwrap()
             ->output()
-            ->reduce(
-                $console,
-                static fn(Console $console, $line) => $console->output($line),
-            )
-            ->output(Str::of("Dependencies updated!\n"));
+            ->map(static fn($chunk) => $chunk->data())
+            ->sink($console)
+            ->attempt(static fn(Console $console, $line) => $console->output($line))
+            ->unwrap()
+            ->output(Str::of("Dependencies updated!\n"))
+            ->unwrap();
     }
 }

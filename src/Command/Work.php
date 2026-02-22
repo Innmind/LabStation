@@ -9,9 +9,11 @@ use Innmind\LabStation\{
 };
 use Innmind\CLI\{
     Command,
+    Command\Usage,
     Console,
 };
 use Innmind\Immutable\{
+    Attempt,
     Str,
     Set,
 };
@@ -26,7 +28,7 @@ final class Work implements Command
     }
 
     #[\Override]
-    public function __invoke(Console $console): Console
+    public function __invoke(Console $console): Attempt
     {
         $triggers = $console
             ->options()
@@ -44,21 +46,21 @@ final class Work implements Command
                 static fn() => Triggers::cases(),
             );
 
-        return ($this->monitor)($console, Set::of(...$triggers));
+        return Attempt::result(($this->monitor)($console, Set::of(...$triggers)));
     }
 
     /**
      * @psalm-pure
      */
     #[\Override]
-    public function usage(): string
+    public function usage(): Usage
     {
-        return <<<USAGE
+        return Usage::parse(<<<USAGE
         work --silent --keep-output --triggers=
 
         The triggers option can contain a comma separated list of values.
 
         Triggers can contain : cs, composer, docker, psalm and tests
-        USAGE;
+        USAGE);
     }
 }

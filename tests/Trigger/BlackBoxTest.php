@@ -12,14 +12,12 @@ use Innmind\LabStation\{
 };
 use Innmind\OperatingSystem\{
     OperatingSystem,
-    Filesystem,
+    Config,
 };
 use Innmind\Server\Control\{
     Server,
-    Server\Processes,
-    Server\Process,
+    Server\Process\Builder,
     Server\Process\Output,
-    Server\Process\ExitCode,
 };
 use Innmind\CLI\{
     Environment,
@@ -33,12 +31,9 @@ use Innmind\Filesystem\{
     File\Content,
 };
 use Innmind\Immutable\{
-    Sequence,
-    Str,
-    Either,
-    SideEffect,
     Map,
     Set as ISet,
+    Attempt,
 };
 use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
@@ -62,15 +57,15 @@ class BlackBoxTest extends TestCase
     {
         $trigger = new BlackBox(new Iteration);
 
-        $os = $this->createMock(OperatingSystem::class);
-        $os
-            ->expects($this->never())
-            ->method('filesystem');
-        $os
-            ->expects($this->never())
-            ->method('control');
+        $os = OperatingSystem::new();
         $console = Console::of(
-            $this->createMock(Environment::class),
+            Environment::inMemory(
+                [],
+                true,
+                [],
+                [],
+                '/somewhere',
+            ),
             new Arguments,
             new Options,
         );
@@ -90,15 +85,9 @@ class BlackBoxTest extends TestCase
             ->then(function($type) {
                 $trigger = new BlackBox(new Iteration);
 
-                $os = $this->createMock(OperatingSystem::class);
-                $os
-                    ->expects($this->never())
-                    ->method('filesystem');
-                $os
-                    ->expects($this->never())
-                    ->method('control');
+                $os = OperatingSystem::new();
                 $console = Console::of(
-                    Environment\InMemory::of(
+                    Environment::inMemory(
                         [],
                         true,
                         [],
@@ -117,11 +106,11 @@ class BlackBoxTest extends TestCase
                 );
                 $this->assertSame(
                     [],
-                    $console->environment()->outputs(),
-                );
-                $this->assertSame(
-                    [],
-                    $console->environment()->errors(),
+                    $console
+                        ->environment()
+                        ->outputted()
+                        ->map(static fn($chunk) => $chunk[0]->toString())
+                        ->toList(),
                 );
             });
     }
@@ -139,79 +128,53 @@ class BlackBoxTest extends TestCase
                 $trigger = new BlackBox(
                     $iteration = new Iteration,
                 );
-
-                $os = $this->createMock(OperatingSystem::class);
-                $filesystem = $this->createMock(Filesystem::class);
-                $server = $this->createMock(Server::class);
-                $processes = $this->createMock(Processes::class);
-                $adapter = Adapter\InMemory::new();
-                $adapter->add(File::named(
+                $adapter = Adapter::inMemory();
+                $_ = $adapter->add(File::named(
                     'blackbox.php',
                     Content::none(),
-                ));
+                ))->unwrap();
 
-                $os
-                    ->method('filesystem')
-                    ->willReturn($filesystem);
-                $filesystem
-                    ->expects($this->once())
-                    ->method('mount')
-                    ->willReturn($adapter);
-                $tests = $this->createMock(Process::class);
-                $say = $this->createMock(Process::class);
-                $os
-                    ->method('control')
-                    ->willReturn($server);
-                $server
-                    ->method('processes')
-                    ->willReturn($processes);
-                $processes
-                    ->expects($matcher = $this->exactly(2))
-                    ->method('execute')
-                    ->willReturnCallback(function($command) use ($matcher, $tests, $say) {
-                        match ($matcher->numberOfInvocations()) {
-                            1 => $this->assertSame(
-                                "php 'blackbox.php'",
-                                $command->toString(),
-                            ),
-                            2 => $this->assertSame(
-                                "say 'BlackBox : ok'",
-                                $command->toString(),
-                            ),
-                        };
+                $count = 0;
+                $os = OperatingSystem::new(
+                    Config::new()
+                        ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                        ->useServerControl(Server::via(
+                            function($command) use (&$count) {
+                                $this->assertSame(
+                                    match ($count) {
+                                        0 => "php 'blackbox.php'",
+                                        1 => "say 'BlackBox : ok'",
+                                    },
+                                    $command->toString(),
+                                );
 
-                        if ($matcher->numberOfInvocations() === 1) {
-                            $this->assertSame('/somewhere/', $command->workingDirectory()->match(
-                                static fn($path) => $path->toString(),
-                                static fn() => null,
-                            ));
-                        }
+                                if ($count === 0) {
+                                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                                        static fn($path) => $path->toString(),
+                                        static fn() => null,
+                                    ));
+                                }
 
-                        return match ($matcher->numberOfInvocations()) {
-                            1 => $tests,
-                            2 => $say,
-                        };
-                    });
-                $tests
-                    ->expects($this->once())
-                    ->method('output')
-                    ->willReturn(new Output\Output(Sequence::of(
-                        [Str::of('some output'), Output\Type::output],
-                        [Str::of('some error'), Output\Type::error],
-                    )));
-                // we say here that tests are successful even though we have an
-                // error in the output in order to verify the terminal is cleared
-                // on success
-                $tests
-                    ->expects($this->once())
-                    ->method('wait')
-                    ->willReturn(Either::right(new SideEffect));
-                $say
-                    ->expects($this->once())
-                    ->method('wait')
-                    ->willReturn(Either::right(new SideEffect));
+                                $builder = Builder::foreground(2);
+                                // we say here that tests are successful even though we have an
+                                // error in the output in order to verify the terminal is cleared
+                                // on success
+                                $builder = match ($count) {
+                                    0 => $builder->success([
+                                        ['some output', 'output'],
+                                        ['some error', 'error'],
+                                    ]),
+                                    1 => $builder,
+                                };
+                                ++$count;
+
+                                return Attempt::result($builder->build());
+                            },
+                        )),
+                );
+
                 $console = Console::of(
-                    Environment\InMemory::of(
+                    Environment::inMemory(
                         [],
                         true,
                         [],
@@ -232,11 +195,11 @@ class BlackBoxTest extends TestCase
                 $console = $iteration->end($console);
                 $this->assertSame(
                     ['some output', 'some error', "\033[2J\033[H"],
-                    $console->environment()->outputs(),
-                );
-                $this->assertSame(
-                    [],
-                    $console->environment()->errors(),
+                    $console
+                        ->environment()
+                        ->outputted()
+                        ->map(static fn($chunk) => $chunk[0]->toString())
+                        ->toList(),
                 );
             });
     }
@@ -255,22 +218,14 @@ class BlackBoxTest extends TestCase
                     $iteration = new Iteration,
                 );
 
-                $os = $this->createMock(OperatingSystem::class);
-                $filesystem = $this->createMock(Filesystem::class);
-                $adapter = Adapter\InMemory::new();
+                $os = OperatingSystem::new(
+                    Config::new()->mountFilesystemVia(
+                        static fn() => Attempt::result(Adapter::inMemory()),
+                    ),
+                );
 
-                $os
-                    ->method('filesystem')
-                    ->willReturn($filesystem);
-                $filesystem
-                    ->expects($this->once())
-                    ->method('mount')
-                    ->willReturn($adapter);
-                $os
-                    ->expects($this->never())
-                    ->method('control');
                 $console = Console::of(
-                    Environment\InMemory::of(
+                    Environment::inMemory(
                         [],
                         true,
                         [],
@@ -291,11 +246,11 @@ class BlackBoxTest extends TestCase
                 $console = $iteration->end($console);
                 $this->assertSame(
                     ["\033[2J\033[H"],
-                    $console->environment()->outputs(),
-                );
-                $this->assertSame(
-                    [],
-                    $console->environment()->errors(),
+                    $console
+                        ->environment()
+                        ->outputted()
+                        ->map(static fn($chunk) => $chunk[0]->toString())
+                        ->toList(),
                 );
             });
     }
@@ -305,73 +260,44 @@ class BlackBoxTest extends TestCase
         $trigger = new BlackBox(
             $iteration = new Iteration,
         );
-
-        $os = $this->createMock(OperatingSystem::class);
-        $filesystem = $this->createMock(Filesystem::class);
-        $server = $this->createMock(Server::class);
-        $processes = $this->createMock(Processes::class);
-        $adapter = Adapter\InMemory::new();
-        $adapter->add(File::named(
+        $adapter = Adapter::inMemory();
+        $_ = $adapter->add(File::named(
             'blackbox.php',
             Content::none(),
-        ));
+        ))->unwrap();
 
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->willReturn($adapter);
-        $tests = $this->createMock(Process::class);
-        $say = $this->createMock(Process::class);
-        $os
-            ->method('control')
-            ->willReturn($server);
-        $server
-            ->method('processes')
-            ->willReturn($processes);
-        $processes
-            ->expects($matcher = $this->exactly(2))
-            ->method('execute')
-            ->willReturnCallback(function($command) use ($matcher, $tests, $say) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertSame(
-                        "php 'blackbox.php'",
-                        $command->toString(),
-                    ),
-                    2 => $this->assertSame(
-                        "say 'BlackBox : ok'",
-                        $command->toString(),
-                    ),
-                };
+        $count = 0;
+        $os = OperatingSystem::new(
+            Config::new()
+                ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                ->useServerControl(Server::via(
+                    function($command) use (&$count) {
+                        $this->assertSame(
+                            match ($count) {
+                                0 => "php 'blackbox.php'",
+                                1 => "say 'BlackBox : ok'",
+                            },
+                            $command->toString(),
+                        );
 
-                if ($matcher->numberOfInvocations() === 1) {
-                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
-                        static fn($path) => $path->toString(),
-                        static fn() => null,
-                    ));
-                }
+                        if ($count === 0) {
+                            $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                                static fn($path) => $path->toString(),
+                                static fn() => null,
+                            ));
+                        }
 
-                return match ($matcher->numberOfInvocations()) {
-                    1 => $tests,
-                    2 => $say,
-                };
-            });
-        $tests
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
-        $tests
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn(new Output\Output(Sequence::of()));
-        $say
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
+                        ++$count;
+
+                        return Attempt::result(
+                            Builder::foreground(2)->build(),
+                        );
+                    },
+                )),
+        );
+
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 ['--keep-output'],
@@ -390,7 +316,14 @@ class BlackBoxTest extends TestCase
             ISet::of(Triggers::proofs),
         );
         $console = $iteration->end($console);
-        $this->assertSame([], $console->environment()->outputs());
+        $this->assertSame(
+            [],
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
+        );
     }
 
     public function testSaidMessageIsChangedWhenTestsAreFailing()
@@ -398,73 +331,47 @@ class BlackBoxTest extends TestCase
         $trigger = new BlackBox(
             $iteration = new Iteration,
         );
-
-        $os = $this->createMock(OperatingSystem::class);
-        $filesystem = $this->createMock(Filesystem::class);
-        $server = $this->createMock(Server::class);
-        $processes = $this->createMock(Processes::class);
-        $adapter = Adapter\InMemory::new();
-        $adapter->add(File::named(
+        $adapter = Adapter::inMemory();
+        $_ = $adapter->add(File::named(
             'blackbox.php',
             Content::none(),
-        ));
+        ))->unwrap();
 
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->willReturn($adapter);
-        $tests = $this->createMock(Process::class);
-        $say = $this->createMock(Process::class);
-        $os
-            ->method('control')
-            ->willReturn($server);
-        $server
-            ->method('processes')
-            ->willReturn($processes);
-        $processes
-            ->expects($matcher = $this->exactly(2))
-            ->method('execute')
-            ->willReturnCallback(function($command) use ($matcher, $tests, $say) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertSame(
-                        "php 'blackbox.php'",
-                        $command->toString(),
-                    ),
-                    2 => $this->assertSame(
-                        "say 'BlackBox : failing'",
-                        $command->toString(),
-                    ),
-                };
+        $count = 0;
+        $os = OperatingSystem::new(
+            Config::new()
+                ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                ->useServerControl(Server::via(
+                    function($command) use (&$count) {
+                        $this->assertSame(
+                            match ($count) {
+                                0 => "php 'blackbox.php'",
+                                1 => "say 'BlackBox : failing'",
+                            },
+                            $command->toString(),
+                        );
 
-                if ($matcher->numberOfInvocations() === 1) {
-                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
-                        static fn($path) => $path->toString(),
-                        static fn() => null,
-                    ));
-                }
+                        if ($count === 0) {
+                            $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                                static fn($path) => $path->toString(),
+                                static fn() => null,
+                            ));
+                        }
 
-                return match ($matcher->numberOfInvocations()) {
-                    1 => $tests,
-                    2 => $say,
-                };
-            });
-        $tests
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn(new Output\Output(Sequence::of()));
-        $tests
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::left(new ExitCode(1)));
-        $say
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
+                        $builder = Builder::foreground(2);
+                        $builder = match ($count) {
+                            0 => $builder->failed(),
+                            1 => $builder,
+                        };
+                        ++$count;
+
+                        return Attempt::result($builder->build());
+                    },
+                )),
+        );
+
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 [],
@@ -483,7 +390,14 @@ class BlackBoxTest extends TestCase
             ISet::of(Triggers::proofs),
         );
         $console = $iteration->end($console);
-        $this->assertSame([], $console->environment()->outputs());
+        $this->assertSame(
+            [],
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
+        );
     }
 
     public function testNoMessageIsSpokenWhenUsingTheSilentOption()
@@ -491,51 +405,40 @@ class BlackBoxTest extends TestCase
         $trigger = new BlackBox(
             $iteration = new Iteration,
         );
-
-        $os = $this->createMock(OperatingSystem::class);
-        $filesystem = $this->createMock(Filesystem::class);
-        $server = $this->createMock(Server::class);
-        $processes = $this->createMock(Processes::class);
-        $adapter = Adapter\InMemory::new();
-        $adapter->add(File::named(
+        $adapter = Adapter::inMemory();
+        $_ = $adapter->add(File::named(
             'blackbox.php',
             Content::none(),
-        ));
+        ))->unwrap();
 
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->willReturn($adapter);
-        $os
-            ->method('control')
-            ->willReturn($server);
-        $server
-            ->method('processes')
-            ->willReturn($processes);
-        $processes
-            ->expects($this->once())
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "php 'blackbox.php'" &&
-                    '/somewhere/' === $command->workingDirectory()->match(
-                        static fn($path) => $path->toString(),
-                        static fn() => null,
-                    );
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
-        $process
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
-        $process
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn(new Output\Output(Sequence::of()));
+        $count = 0;
+        $os = OperatingSystem::new(
+            Config::new()
+                ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                ->useServerControl(Server::via(
+                    function($command) use (&$count) {
+                        $this->assertSame(
+                            match ($count) {
+                                0 => "php 'blackbox.php'",
+                            },
+                            $command->toString(),
+                        );
+                        $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                            static fn($path) => $path->toString(),
+                            static fn() => null,
+                        ));
+
+                        ++$count;
+
+                        return Attempt::result(
+                            Builder::foreground(2)->build(),
+                        );
+                    },
+                )),
+        );
+
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 ['--silent'],
@@ -554,7 +457,13 @@ class BlackBoxTest extends TestCase
             ISet::of(Triggers::proofs),
         );
         $console = $iteration->end($console);
-        $this->assertSame(["\033[2J\033[H"], $console->environment()->outputs());
-        $this->assertSame([], $console->environment()->errors());
+        $this->assertSame(
+            ["\033[2J\033[H"],
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
+        );
     }
 }

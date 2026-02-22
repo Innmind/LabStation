@@ -5,7 +5,7 @@ namespace Innmind\LabStation;
 
 use Innmind\CLI\Console;
 use Innmind\OperatingSystem\OperatingSystem;
-use Innmind\TimeContinuum\Earth\Period\Millisecond;
+use Innmind\Time\Period;
 use Innmind\Immutable\Set;
 
 final class Activities
@@ -46,7 +46,10 @@ final class Activities
         // exit this method periodically to allow the source to be restarted in
         // order to check if any agent crashed in order to restart it.
         if (\count($this->activities) === 0) {
-            $os->process()->halt(Millisecond::of(500));
+            $_ = $os
+                ->process()
+                ->halt(Period::millisecond(500))
+                ->unwrap();
         }
 
         while ($activity = \array_shift($this->activities)) {

@@ -7,10 +7,7 @@ use Innmind\LabStation\{
     Agent,
     Activities,
 };
-use Innmind\Mantle\{
-    Source\Continuation,
-    Task,
-};
+use Innmind\Async\Scope\Continuation;
 use Innmind\CLI\Console;
 use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\Url\Path;
@@ -41,27 +38,26 @@ final class Loop
 
     /**
      * @param array{Console, boolean} $carry
-     * @param Continuation<array{Console, boolean}, ?Agent> $continuation
-     * @param Sequence<?Agent> $crashed
+     * @param Continuation<array{Console, boolean}> $continuation
      *
-     * @return Continuation<array{Console, boolean}, ?Agent>
+     * @return Continuation<array{Console, boolean}>
      */
     public function __invoke(
         array $carry,
         OperatingSystem $os,
         Continuation $continuation,
-        Sequence $crashed,
     ): Continuation {
         [$console, $started] = $carry;
 
         if (!$started) {
             return $continuation
-                ->launch($this->agents->map($this->buildTask(...)))
+                ->schedule($this->agents->map($this->buildTask(...)))
                 ->carryWith([$console, true]);
         }
 
-        $continuation = $continuation->launch(
-            $crashed
+        $continuation = $continuation->schedule(
+            $continuation
+                ->results() // crashed agents
                 ->keep(Instance::of(Agent::class))
                 ->map($this->buildTask(...)),
         );
@@ -75,14 +71,14 @@ final class Loop
     }
 
     /**
-     * @return Task<?Agent>
+     * @return callable(OperatingSystem): ?Agent
      */
-    private function buildTask(Agent $agent): Task
+    private function buildTask(Agent $agent): callable
     {
-        return Task::of(fn($os) => $agent(
+        return fn(OperatingSystem $os) => $agent(
             $os,
             $this->project,
             $this->activities,
-        ));
+        );
     }
 }

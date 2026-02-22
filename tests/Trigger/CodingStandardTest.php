@@ -12,10 +12,7 @@ use Innmind\LabStation\{
 };
 use Innmind\Server\Control\{
     Server,
-    Server\Processes,
-    Server\Process,
-    Server\Process\Output,
-    Server\Process\ExitCode,
+    Server\Process\Builder,
 };
 use Innmind\CLI\{
     Environment,
@@ -23,10 +20,9 @@ use Innmind\CLI\{
     Command\Arguments,
     Command\Options,
 };
-use Innmind\Url\Path;
 use Innmind\OperatingSystem\{
     OperatingSystem,
-    Filesystem,
+    Config,
 };
 use Innmind\Filesystem\{
     Adapter,
@@ -34,12 +30,9 @@ use Innmind\Filesystem\{
     File\Content,
 };
 use Innmind\Immutable\{
-    Sequence,
-    Str,
-    Either,
-    SideEffect,
     Map,
     Set,
+    Attempt,
 };
 use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
@@ -65,15 +58,15 @@ class CodingStandardTest extends TestCase
     {
         $trigger = new CodingStandard(new Iteration);
 
-        $os = $this->createMock(OperatingSystem::class);
-        $os
-            ->expects($this->never())
-            ->method('filesystem');
-        $os
-            ->expects($this->never())
-            ->method('control');
+        $os = OperatingSystem::new();
         $console = Console::of(
-            $this->createMock(Environment::class),
+            Environment::inMemory(
+                [],
+                true,
+                [],
+                [],
+                '/somewhere',
+            ),
             new Arguments,
             new Options,
         );
@@ -90,21 +83,14 @@ class CodingStandardTest extends TestCase
     {
         $trigger = new CodingStandard(new Iteration);
 
-        $os = $this->createMock(OperatingSystem::class);
-        $filesystem = $this->createMock(Filesystem::class);
+        $os = OperatingSystem::new(
+            Config::new()->mountFilesystemVia(
+                static fn() => Attempt::result(Adapter::inMemory()),
+            ),
+        );
 
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->willReturn(Adapter\InMemory::new());
-        $os
-            ->expects($this->never())
-            ->method('control');
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 [],
@@ -127,15 +113,9 @@ class CodingStandardTest extends TestCase
     {
         $trigger = new CodingStandard(new Iteration);
 
-        $os = $this->createMock(OperatingSystem::class);
-        $os
-            ->expects($this->never())
-            ->method('filesystem');
-        $os
-            ->expects($this->never())
-            ->method('control');
+        $os = OperatingSystem::new();
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 [],
@@ -154,11 +134,11 @@ class CodingStandardTest extends TestCase
         );
         $this->assertSame(
             [],
-            $console->environment()->outputs(),
-        );
-        $this->assertSame(
-            [],
-            $console->environment()->errors(),
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
         );
     }
 
@@ -176,77 +156,50 @@ class CodingStandardTest extends TestCase
                 $trigger = new CodingStandard(
                     $iteration = new Iteration,
                 );
-
-                $os = $this->createMock(OperatingSystem::class);
-                $server = $this->createMock(Server::class);
-                $processes = $this->createMock(Processes::class);
-                $filesystem = $this->createMock(Filesystem::class);
-                $adapter = Adapter\InMemory::new();
-                $adapter->add(File::named(
+                $adapter = Adapter::inMemory();
+                $_ = $adapter->add(File::named(
                     '.php_cs.dist',
                     Content::none(),
-                ));
+                ))->unwrap();
 
-                $os
-                    ->method('filesystem')
-                    ->willReturn($filesystem);
-                $filesystem
-                    ->expects($this->once())
-                    ->method('mount')
-                    ->with(Path::of('/somewhere/'))
-                    ->willReturn($adapter);
-                $cs = $this->createMock(Process::class);
-                $say = $this->createMock(Process::class);
-                $os
-                    ->method('control')
-                    ->willReturn($server);
-                $server
-                    ->method('processes')
-                    ->willReturn($processes);
-                $processes
-                    ->expects($matcher = $this->exactly(2))
-                    ->method('execute')
-                    ->willReturnCallback(function($command) use ($matcher, $cs, $say) {
-                        match ($matcher->numberOfInvocations()) {
-                            1 => $this->assertSame(
-                                "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
-                                $command->toString(),
-                            ),
-                            2 => $this->assertSame(
-                                "say 'Coding Standard : right'",
-                                $command->toString(),
-                            ),
-                        };
+                $count = 0;
+                $os = OperatingSystem::new(
+                    Config::new()
+                        ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                        ->useServerControl(Server::via(
+                            function($command) use (&$count) {
+                                $this->assertSame(
+                                    match ($count) {
+                                        0 => "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
+                                        1 => "say 'Coding Standard : right'",
+                                    },
+                                    $command->toString(),
+                                );
 
-                        if ($matcher->numberOfInvocations() === 1) {
-                            $this->assertSame('/somewhere/', $command->workingDirectory()->match(
-                                static fn($path) => $path->toString(),
-                                static fn() => null,
-                            ));
-                        }
+                                if ($count === 0) {
+                                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                                        static fn($path) => $path->toString(),
+                                        static fn() => null,
+                                    ));
+                                }
 
-                        return match ($matcher->numberOfInvocations()) {
-                            1 => $cs,
-                            2 => $say,
-                        };
-                    });
-                $cs
-                    ->expects($this->once())
-                    ->method('output')
-                    ->willReturn(new Output\Output(Sequence::of(
-                        [Str::of('some output'), Output\Type::output],
-                        [Str::of('some error'), Output\Type::error],
-                    )));
-                $cs
-                    ->expects($this->once())
-                    ->method('wait')
-                    ->willReturn(Either::right(new SideEffect));
-                $say
-                    ->expects($this->once())
-                    ->method('wait')
-                    ->willReturn(Either::right(new SideEffect));
+                                $builder = Builder::foreground(2);
+                                $builder = match ($count) {
+                                    0 => $builder->success([
+                                        ['some output', 'output'],
+                                        ['some error', 'error'],
+                                    ]),
+                                    1 => $builder,
+                                };
+                                ++$count;
+
+                                return Attempt::result($builder->build());
+                            },
+                        )),
+                );
+
                 $console = Console::of(
-                    Environment\InMemory::of(
+                    Environment::inMemory(
                         [],
                         true,
                         [],
@@ -267,11 +220,11 @@ class CodingStandardTest extends TestCase
                 $console = $iteration->end($console);
                 $this->assertSame(
                     ['some output', 'some error', "\033[2J\033[H"],
-                    $console->environment()->outputs(),
-                );
-                $this->assertSame(
-                    [],
-                    $console->environment()->errors(),
+                    $console
+                        ->environment()
+                        ->outputted()
+                        ->map(static fn($chunk) => $chunk[0]->toString())
+                        ->toList(),
                 );
             });
     }
@@ -281,74 +234,44 @@ class CodingStandardTest extends TestCase
         $trigger = new CodingStandard(
             $iteration = new Iteration,
         );
-
-        $os = $this->createMock(OperatingSystem::class);
-        $server = $this->createMock(Server::class);
-        $processes = $this->createMock(Processes::class);
-        $filesystem = $this->createMock(Filesystem::class);
-        $adapter = Adapter\InMemory::new();
-        $adapter->add(File::named(
+        $adapter = Adapter::inMemory();
+        $_ = $adapter->add(File::named(
             '.php_cs.dist',
             Content::none(),
-        ));
+        ))->unwrap();
 
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->with(Path::of('/somewhere/'))
-            ->willReturn($adapter);
-        $cs = $this->createMock(Process::class);
-        $say = $this->createMock(Process::class);
-        $os
-            ->method('control')
-            ->willReturn($server);
-        $server
-            ->method('processes')
-            ->willReturn($processes);
-        $processes
-            ->expects($matcher = $this->exactly(2))
-            ->method('execute')
-            ->willReturnCallback(function($command) use ($matcher, $cs, $say) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertSame(
-                        "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
-                        $command->toString(),
-                    ),
-                    2 => $this->assertSame(
-                        "say 'Coding Standard : right'",
-                        $command->toString(),
-                    ),
-                };
+        $count = 0;
+        $os = OperatingSystem::new(
+            Config::new()
+                ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                ->useServerControl(Server::via(
+                    function($command) use (&$count) {
+                        $this->assertSame(
+                            match ($count) {
+                                0 => "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
+                                1 => "say 'Coding Standard : right'",
+                            },
+                            $command->toString(),
+                        );
 
-                if ($matcher->numberOfInvocations() === 1) {
-                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
-                        static fn($path) => $path->toString(),
-                        static fn() => null,
-                    ));
-                }
+                        if ($count === 0) {
+                            $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                                static fn($path) => $path->toString(),
+                                static fn() => null,
+                            ));
+                        }
 
-                return match ($matcher->numberOfInvocations()) {
-                    1 => $cs,
-                    2 => $say,
-                };
-            });
-        $cs
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn(new Output\Output(Sequence::of()));
-        $cs
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
-        $say
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
+                        ++$count;
+
+                        return Attempt::result(
+                            Builder::foreground(2)->build(),
+                        );
+                    },
+                )),
+        );
+
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 ['--keep-output'],
@@ -367,8 +290,14 @@ class CodingStandardTest extends TestCase
             Set::of(Triggers::codingStandard),
         );
         $console = $iteration->end($console);
-        $this->assertSame([], $console->environment()->outputs());
-        $this->assertSame([], $console->environment()->errors());
+        $this->assertSame(
+            [],
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
+        );
     }
 
     public function testTriggerForPHPCSFixer3()
@@ -376,77 +305,50 @@ class CodingStandardTest extends TestCase
         $trigger = new CodingStandard(
             $iteration = new Iteration,
         );
-
-        $os = $this->createMock(OperatingSystem::class);
-        $server = $this->createMock(Server::class);
-        $processes = $this->createMock(Processes::class);
-        $filesystem = $this->createMock(Filesystem::class);
-        $adapter = Adapter\InMemory::new();
-        $adapter->add(File::named(
+        $adapter = Adapter::inMemory();
+        $_ = $adapter->add(File::named(
             '.php-cs-fixer.dist.php',
             Content::none(),
-        ));
+        ))->unwrap();
 
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->with(Path::of('/somewhere/'))
-            ->willReturn($adapter);
-        $cs = $this->createMock(Process::class);
-        $say = $this->createMock(Process::class);
-        $os
-            ->method('control')
-            ->willReturn($server);
-        $server
-            ->method('processes')
-            ->willReturn($processes);
-        $processes
-            ->expects($matcher = $this->exactly(2))
-            ->method('execute')
-            ->willReturnCallback(function($command) use ($matcher, $cs, $say) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertSame(
-                        "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run'",
-                        $command->toString(),
-                    ),
-                    2 => $this->assertSame(
-                        "say 'Coding Standard : right'",
-                        $command->toString(),
-                    ),
-                };
+        $count = 0;
+        $os = OperatingSystem::new(
+            Config::new()
+                ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                ->useServerControl(Server::via(
+                    function($command) use (&$count) {
+                        $this->assertSame(
+                            match ($count) {
+                                0 => "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run'",
+                                1 => "say 'Coding Standard : right'",
+                            },
+                            $command->toString(),
+                        );
 
-                if ($matcher->numberOfInvocations() === 1) {
-                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
-                        static fn($path) => $path->toString(),
-                        static fn() => null,
-                    ));
-                }
+                        if ($count === 0) {
+                            $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                                static fn($path) => $path->toString(),
+                                static fn() => null,
+                            ));
+                        }
 
-                return match ($matcher->numberOfInvocations()) {
-                    1 => $cs,
-                    2 => $say,
-                };
-            });
-        $cs
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn(new Output\Output(Sequence::of(
-                [Str::of('some output'), Output\Type::output],
-                [Str::of('some error'), Output\Type::error],
-            )));
-        $cs
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
-        $say
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
+                        $builder = Builder::foreground(2);
+                        $builder = match ($count) {
+                            0 => $builder->success([
+                                ['some output', 'output'],
+                                ['some error', 'error'],
+                            ]),
+                            1 => $builder,
+                        };
+                        ++$count;
+
+                        return Attempt::result($builder->build());
+                    },
+                )),
+        );
+
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 [],
@@ -467,11 +369,11 @@ class CodingStandardTest extends TestCase
         $console = $iteration->end($console);
         $this->assertSame(
             ['some output', 'some error', "\033[2J\033[H"],
-            $console->environment()->outputs(),
-        );
-        $this->assertSame(
-            [],
-            $console->environment()->errors(),
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
         );
     }
 
@@ -480,74 +382,47 @@ class CodingStandardTest extends TestCase
         $trigger = new CodingStandard(
             $iteration = new Iteration,
         );
-
-        $os = $this->createMock(OperatingSystem::class);
-        $server = $this->createMock(Server::class);
-        $processes = $this->createMock(Processes::class);
-        $filesystem = $this->createMock(Filesystem::class);
-        $adapter = Adapter\InMemory::new();
-        $adapter->add(File::named(
+        $adapter = Adapter::inMemory();
+        $_ = $adapter->add(File::named(
             '.php_cs.dist',
             Content::none(),
-        ));
+        ))->unwrap();
 
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->with(Path::of('/somewhere/'))
-            ->willReturn($adapter);
-        $cs = $this->createMock(Process::class);
-        $say = $this->createMock(Process::class);
-        $os
-            ->method('control')
-            ->willReturn($server);
-        $server
-            ->method('processes')
-            ->willReturn($processes);
-        $processes
-            ->expects($matcher = $this->exactly(2))
-            ->method('execute')
-            ->willReturnCallback(function($command) use ($matcher, $cs, $say) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertSame(
-                        "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
-                        $command->toString(),
-                    ),
-                    2 => $this->assertSame(
-                        "say 'Coding Standard : wrong'",
-                        $command->toString(),
-                    ),
-                };
+        $count = 0;
+        $os = OperatingSystem::new(
+            Config::new()
+                ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                ->useServerControl(Server::via(
+                    function($command) use (&$count) {
+                        $this->assertSame(
+                            match ($count) {
+                                0 => "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
+                                1 => "say 'Coding Standard : wrong'",
+                            },
+                            $command->toString(),
+                        );
 
-                if ($matcher->numberOfInvocations() === 1) {
-                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
-                        static fn($path) => $path->toString(),
-                        static fn() => null,
-                    ));
-                }
+                        if ($count === 0) {
+                            $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                                static fn($path) => $path->toString(),
+                                static fn() => null,
+                            ));
+                        }
 
-                return match ($matcher->numberOfInvocations()) {
-                    1 => $cs,
-                    2 => $say,
-                };
-            });
-        $cs
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn(new Output\Output(Sequence::of()));
-        $cs
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::left(new ExitCode(1)));
-        $say
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
+                        $builder = Builder::foreground(2);
+                        $builder = match ($count) {
+                            0 => $builder->failed(),
+                            1 => $builder,
+                        };
+                        ++$count;
+
+                        return Attempt::result($builder->build());
+                    },
+                )),
+        );
+
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 [],
@@ -566,8 +441,14 @@ class CodingStandardTest extends TestCase
             Set::of(Triggers::codingStandard),
         );
         $console = $iteration->end($console);
-        $this->assertSame([], $console->environment()->outputs());
-        $this->assertSame([], $console->environment()->errors());
+        $this->assertSame(
+            [],
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
+        );
     }
 
     public function testNoMessageIsSpokenWhenUsingTheSilentOption()
@@ -575,52 +456,40 @@ class CodingStandardTest extends TestCase
         $trigger = new CodingStandard(
             $iteration = new Iteration,
         );
-
-        $os = $this->createMock(OperatingSystem::class);
-        $server = $this->createMock(Server::class);
-        $processes = $this->createMock(Processes::class);
-        $filesystem = $this->createMock(Filesystem::class);
-        $adapter = Adapter\InMemory::new();
-        $adapter->add(File::named(
+        $adapter = Adapter::inMemory();
+        $_ = $adapter->add(File::named(
             '.php_cs.dist',
             Content::none(),
-        ));
+        ))->unwrap();
 
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('mount')
-            ->with(Path::of('/somewhere/'))
-            ->willReturn($adapter);
-        $os
-            ->method('control')
-            ->willReturn($server);
-        $server
-            ->method('processes')
-            ->willReturn($processes);
-        $processes
-            ->expects($this->once())
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'" &&
-                    '/somewhere/' === $command->workingDirectory()->match(
-                        static fn($path) => $path->toString(),
-                        static fn() => null,
-                    );
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
-        $process
-            ->expects($this->once())
-            ->method('wait')
-            ->willReturn(Either::right(new SideEffect));
-        $process
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn(new Output\Output(Sequence::of()));
+        $count = 0;
+        $os = OperatingSystem::new(
+            Config::new()
+                ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                ->useServerControl(Server::via(
+                    function($command) use (&$count) {
+                        $this->assertSame(
+                            match ($count) {
+                                0 => "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
+                            },
+                            $command->toString(),
+                        );
+                        $this->assertSame('/somewhere/', $command->workingDirectory()->match(
+                            static fn($path) => $path->toString(),
+                            static fn() => null,
+                        ));
+
+                        ++$count;
+
+                        return Attempt::result(
+                            Builder::foreground(2)->build(),
+                        );
+                    },
+                )),
+        );
+
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 ['--silent'],
@@ -639,7 +508,13 @@ class CodingStandardTest extends TestCase
             Set::of(Triggers::codingStandard),
         );
         $console = $iteration->end($console);
-        $this->assertSame(["\033[2J\033[H"], $console->environment()->outputs());
-        $this->assertSame([], $console->environment()->errors());
+        $this->assertSame(
+            ["\033[2J\033[H"],
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
+        );
     }
 }

@@ -35,11 +35,17 @@ class AllTest extends TestCase
         $triggers = Set::of();
         $activity = Activity::start;
         $console = Console::of(
-            $this->createMock(Environment::class),
+            Environment::inMemory(
+                [],
+                true,
+                [],
+                [],
+                '/somewhere',
+            ),
             new Arguments,
             new Options,
         );
-        $os = $this->createMock(OperatingSystem::class);
+        $os = OperatingSystem::new();
         $trigger1
             ->expects($this->once())
             ->method('__invoke')

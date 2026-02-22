@@ -31,6 +31,6 @@ final class Iteration
         }
 
         // clear terminal
-        return $console->output(Str::of("\033[2J\033[H"));
+        return $console->output(Str::of("\033[2J\033[H"))->unwrap();
     }
 }
