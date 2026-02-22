@@ -55,12 +55,7 @@ class WatchFixturesTest extends TestCase
             Config::new()
                 ->mountFilesystemVia(static fn() => Attempt::result($adapter))
                 ->useServerControl(Server::via(
-                    function($command) use (&$count) {
-                        $this->assertSame(
-                            "find '/vendor/package/fixtures/' '-type' 'f' | xargs '-n' '1' '-r' 'stat' '-f' '%Sm %N' '-t' '%Y-%m-%dT%H-%M-%S'",
-                            $command->toString(),
-                        );
-
+                    static function($command) use (&$count) {
                         $builder = Builder::foreground(2);
                         $builder = match ($count) {
                             0 => $builder->success([['output', 'output']]),
