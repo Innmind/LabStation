@@ -16,10 +16,19 @@ use Innmind\OperatingSystem\{
     OperatingSystem,
     Config,
 };
-use Innmind\Filesystem\Adapter;
-use Innmind\FileWatch\Watch;
+use Innmind\Server\Control\{
+    Server,
+    Server\Process\Builder,
+};
+use Innmind\Filesystem\{
+    Adapter,
+    Directory,
+};
 use Innmind\Url\Path;
-use Innmind\Immutable\Set;
+use Innmind\Immutable\{
+    Set,
+    Attempt,
+};
 use PHPUnit\Framework\TestCase;
 
 class WatchSourcesTest extends TestCase
@@ -36,10 +45,33 @@ class WatchSourcesTest extends TestCase
     {
         $agent = new WatchSources;
 
+        $adapter = Adapter::inMemory();
+        $_ = $adapter
+            ->add(Directory::named('src'))
+            ->unwrap();
+
+        $count = 0;
         $os = OperatingSystem::new(
             Config::new()
-                ->mountFilesystemVia(static fn() => Attempt::result(Adapter::inMemory()))
-                ->useFileWatch(Watch::via()), // todo simulate file change
+                ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                ->useServerControl(Server::via(
+                    function($command) use (&$count) {
+                        $this->assertSame(
+                            "find '/vendor/package/src/' '-type' 'f' | xargs '-n' '1' '-r' 'stat' '-f' '%Sm %N' '-t' '%Y-%m-%dT%H-%M-%S'",
+                            $command->toString(),
+                        );
+
+                        $builder = Builder::foreground(2);
+                        $builder = match ($count) {
+                            0 => $builder->success([['output', 'output']]),
+                            1 => $builder->success([['changed', 'output']]),
+                            2 => $builder->failed(),
+                        };
+                        ++$count;
+
+                        return Attempt::result($builder->build());
+                    },
+                )),
         );
 
         $activities = Activities::new(
