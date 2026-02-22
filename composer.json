@@ -33,7 +33,8 @@
         "phpunit/phpunit": "~10.2",
         "innmind/static-analysis": "~1.3",
         "innmind/black-box": "~6.5",
-        "innmind/coding-standard": "~2.0"
+        "innmind/coding-standard": "~2.0",
+        "innmind/file-watch": "^6.0.1"
     },
     "bin": ["lab-station"]
 }
