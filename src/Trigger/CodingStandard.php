@@ -50,7 +50,10 @@ final class CodingStandard implements Trigger
 
     private function attempt(Console $console, OperatingSystem $os): Console
     {
-        $directory = $os->filesystem()->mount($console->workingDirectory());
+        $directory = $os
+            ->filesystem()
+            ->mount($console->workingDirectory())
+            ->unwrap();
 
         return $directory
             ->get(Name::of('.php_cs.dist'))
@@ -91,13 +94,14 @@ final class CodingStandard implements Trigger
         $process = $os
             ->control()
             ->processes()
-            ->execute($command);
+            ->execute($command)
+            ->unwrap();
         $console = $process
             ->output()
-            ->reduce(
-                $console,
-                static fn(Console $console, $line) => $console->output($line),
-            );
+            ->map(static fn($chunk) => $chunk->data())
+            ->sink($console)
+            ->attempt(static fn(Console $console, $line) => $console->output($line))
+            ->unwrap();
         $successful = $process->wait()->match(
             static fn() => true,
             static fn() => false,
@@ -122,7 +126,8 @@ final class CodingStandard implements Trigger
                     },
                 ),
             )
-            ->wait()
+            ->either()
+            ->flatMap(static fn($process) => $process->wait())
             ->match(
                 static fn() => $console,
                 static fn() => $console,

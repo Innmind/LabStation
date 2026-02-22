@@ -42,6 +42,7 @@ final class DockerCompose implements Trigger
         return $os
             ->filesystem()
             ->mount($console->workingDirectory())
+            ->unwrap()
             ->get(Name::of('docker-compose.yml'))
             ->match(
                 fn() => $this->run($console, $os),
@@ -66,11 +67,13 @@ final class DockerCompose implements Trigger
                     ->withWorkingDirectory($console->workingDirectory())
                     ->withEnvironments($variables),
             )
-            ->wait()
+            ->either()
+            ->flatMap(static fn($process) => $process->wait())
             ->match(
                 static fn() => $console,
                 static fn() => $console
-                    ->error(Str::of("Failed to start docker\n")),
+                    ->error(Str::of("Failed to start docker\n"))
+                    ->unwrap(),
             );
     }
 }

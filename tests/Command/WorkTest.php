@@ -21,7 +21,7 @@ class WorkTest extends TestCase
             Command::class,
             new Work(
                 new Monitor(
-                    $this->createMock(OperatingSystem::class),
+                    OperatingSystem::new(),
                     new Iteration,
                     $this->createMock(Trigger::class),
                 ),
@@ -33,7 +33,7 @@ class WorkTest extends TestCase
     {
         $this->assertSame(
             <<<USAGE
-            work --silent --keep-output --triggers=
+            work --silent --keep-output --triggers= --help --no-interaction
 
             The triggers option can contain a comma separated list of values.
 
@@ -41,11 +41,11 @@ class WorkTest extends TestCase
             USAGE,
             (new Work(
                 new Monitor(
-                    $this->createMock(OperatingSystem::class),
+                    OperatingSystem::new(),
                     new Iteration,
                     $this->createMock(Trigger::class),
                 ),
-            ))->usage(),
+            ))->usage()->toString(),
         );
     }
 }

@@ -19,7 +19,7 @@ class IterationTest extends TestCase
     {
         $iteration = new Iteration;
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 [],
@@ -33,7 +33,11 @@ class IterationTest extends TestCase
         $console = $iteration->end($console);
         $this->assertSame(
             ["\033[2J\033[H"],
-            $console->environment()->outputs(),
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
         );
     }
 
@@ -41,7 +45,7 @@ class IterationTest extends TestCase
     {
         $iteration = new Iteration;
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 [],
@@ -56,7 +60,11 @@ class IterationTest extends TestCase
         $console = $iteration->end($console);
         $this->assertSame(
             ["\033[2J\033[H"],
-            $console->environment()->outputs(),
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
         );
     }
 
@@ -64,7 +72,7 @@ class IterationTest extends TestCase
     {
         $iteration = new Iteration;
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 [],
@@ -78,14 +86,21 @@ class IterationTest extends TestCase
         $iteration->start();
         $iteration->failing();
         $console = $iteration->end($console);
-        $this->assertSame([], $console->environment()->outputs());
+        $this->assertSame(
+            [],
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
+        );
     }
 
     public function testNormalIterationWithoutAFailureWillNotClearTheTerminalWhenExplicitlyAskToKeepOutput()
     {
         $iteration = new Iteration;
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 ['--keep-output'],
@@ -98,14 +113,21 @@ class IterationTest extends TestCase
 
         $iteration->start();
         $console = $iteration->end($console);
-        $this->assertSame([], $console->environment()->outputs());
+        $this->assertSame(
+            [],
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
+        );
     }
 
     public function testNormalIterationWithAFailureWillNotClearTheTerminalWhenExplicitlyAskToKeepOutput()
     {
         $iteration = new Iteration;
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 ['--keep-output'],
@@ -119,14 +141,21 @@ class IterationTest extends TestCase
         $iteration->start();
         $iteration->failing();
         $console = $iteration->end($console);
-        $this->assertSame([], $console->environment()->outputs());
+        $this->assertSame(
+            [],
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
+        );
     }
 
     public function testClearTheTerminalEvenWhenPreviousIterationFailed()
     {
         $iteration = new Iteration;
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 [],
@@ -144,7 +173,11 @@ class IterationTest extends TestCase
         $console = $iteration->end($console);
         $this->assertSame(
             ["\033[2J\033[H"],
-            $console->environment()->outputs(),
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
         );
     }
 }

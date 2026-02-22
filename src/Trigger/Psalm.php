@@ -49,6 +49,7 @@ final class Psalm implements Trigger
         return $os
             ->filesystem()
             ->mount($console->workingDirectory())
+            ->unwrap()
             ->get(Name::of('psalm.xml'))
             ->match(
                 fn() => $this->run($console, $os),
@@ -71,13 +72,14 @@ final class Psalm implements Trigger
                     ->withOption('no-cache')
                     ->withWorkingDirectory($console->workingDirectory())
                     ->withEnvironments($variables),
-            );
+            )
+            ->unwrap();
         $console = $process
             ->output()
-            ->reduce(
-                $console,
-                static fn(Console $console, $line) => $console->output($line),
-            );
+            ->map(static fn($chunk) => $chunk->data())
+            ->sink($console)
+            ->attempt(static fn(Console $console, $line) => $console->output($line))
+            ->unwrap();
         $successful = $process->wait()->match(
             static fn() => true,
             static fn() => false,
@@ -102,7 +104,8 @@ final class Psalm implements Trigger
                     },
                 ),
             )
-            ->wait()
+            ->either()
+            ->flatMap(static fn($process) => $process->wait())
             ->match(
                 static fn() => $console,
                 static fn() => $console,
