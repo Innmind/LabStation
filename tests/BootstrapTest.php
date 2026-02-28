@@ -6,13 +6,13 @@ namespace Tests\Innmind\LabStation;
 use function Innmind\LabStation\bootstrap;
 use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\CLI\Commands;
-use PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class BootstrapTest extends TestCase
 {
     public function testInvokation()
     {
-        $os = $this->createMock(OperatingSystem::class);
+        $os = OperatingSystem::new();
 
         $this->assertInstanceOf(Commands::class, bootstrap($os));
     }

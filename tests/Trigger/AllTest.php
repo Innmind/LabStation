@@ -15,8 +15,11 @@ use Innmind\CLI\{
     Command\Options,
 };
 use Innmind\OperatingSystem\OperatingSystem;
-use Innmind\Immutable\Set;
-use PHPUnit\Framework\TestCase;
+use Innmind\Immutable\{
+    Set,
+    Attempt,
+};
+use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class AllTest extends TestCase
 {
@@ -28,34 +31,52 @@ class AllTest extends TestCase
     public function testTriggerAllSubTriggers()
     {
         $trigger = new All(
-            $trigger1 = $this->createMock(Trigger::class),
-            $trigger2 = $this->createMock(Trigger::class),
-            $trigger3 = $this->createMock(Trigger::class),
+            new class implements Trigger {
+                public function __invoke(
+                    Console $console,
+                    OperatingSystem $os,
+                    Activity $activity,
+                    Set $triggers,
+                ): Attempt {
+                    return Attempt::result($console);
+                }
+            },
+            new class implements Trigger {
+                public function __invoke(
+                    Console $console,
+                    OperatingSystem $os,
+                    Activity $activity,
+                    Set $triggers,
+                ): Attempt {
+                    return Attempt::result($console);
+                }
+            },
+            new class implements Trigger {
+                public function __invoke(
+                    Console $console,
+                    OperatingSystem $os,
+                    Activity $activity,
+                    Set $triggers,
+                ): Attempt {
+                    return Attempt::result($console);
+                }
+            },
         );
         $triggers = Set::of();
         $activity = Activity::start;
         $console = Console::of(
-            $this->createMock(Environment::class),
+            Environment::inMemory(
+                [],
+                true,
+                [],
+                [],
+                '/somewhere',
+            ),
             new Arguments,
             new Options,
         );
-        $os = $this->createMock(OperatingSystem::class);
-        $trigger1
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($console, $os, $activity, $triggers)
-            ->willReturn($console);
-        $trigger2
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($console, $os, $activity, $triggers)
-            ->willReturn($console);
-        $trigger3
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($console, $os, $activity, $triggers)
-            ->willReturn($console);
+        $os = OperatingSystem::new();
 
-        $this->assertSame($console, $trigger($console, $os, $activity, $triggers));
+        $this->assertSame($console, $trigger($console, $os, $activity, $triggers)->unwrap());
     }
 }

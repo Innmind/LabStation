@@ -9,12 +9,13 @@ use Innmind\LabStation\{
     Triggers,
     Activity,
 };
-use Innmind\OperatingSystem\OperatingSystem;
+use Innmind\OperatingSystem\{
+    OperatingSystem,
+    Config,
+};
 use Innmind\Server\Control\{
     Server,
-    Server\Processes,
-    Server\Process,
-    Server\Process\Output,
+    Server\Process\Builder,
 };
 use Innmind\CLI\{
     Environment,
@@ -23,11 +24,10 @@ use Innmind\CLI\{
     Command\Options,
 };
 use Innmind\Immutable\{
-    Str,
-    Sequence,
     Set,
+    Attempt,
 };
-use PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class ComposerUpdateTest extends TestCase
 {
@@ -43,12 +43,9 @@ class ComposerUpdateTest extends TestCase
     {
         $trigger = new ComposerUpdate;
 
-        $os = $this->createMock(OperatingSystem::class);
-        $os
-            ->expects($this->never())
-            ->method('control');
+        $os = OperatingSystem::new();
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 [],
                 true,
                 [],
@@ -64,19 +61,16 @@ class ComposerUpdateTest extends TestCase
             $os,
             Activity::sourcesModified,
             Set::of(Triggers::composerUpdate),
-        ));
+        )->unwrap());
     }
 
     public function testDoNothingWhenTriggerNotEnabled()
     {
         $trigger = new ComposerUpdate;
 
-        $os = $this->createMock(OperatingSystem::class);
-        $os
-            ->expects($this->never())
-            ->method('control');
+        $os = OperatingSystem::new();
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 ["\n"],
                 true,
                 [],
@@ -92,14 +86,14 @@ class ComposerUpdateTest extends TestCase
             $os,
             Activity::start,
             Set::of(),
-        );
+        )->unwrap();
         $this->assertSame(
             [],
-            $console->environment()->outputs(),
-        );
-        $this->assertSame(
-            [],
-            $console->environment()->errors(),
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
         );
     }
 
@@ -107,36 +101,32 @@ class ComposerUpdateTest extends TestCase
     {
         $trigger = new ComposerUpdate;
 
-        $os = $this->createMock(OperatingSystem::class);
-        $server = $this->createMock(Server::class);
-        $processes = $this->createMock(Processes::class);
-
-        $os
-            ->method('control')
-            ->willReturn($server);
-        $server
-            ->method('processes')
-            ->willReturn($processes);
-        $processes
-            ->expects($this->once())
-            ->method('execute')
-            ->with($this->callback(static function($command): bool {
-                return $command->toString() === "composer '--ansi' 'update'" &&
-                    '/somewhere/' === $command->workingDirectory()->match(
+        $os = OperatingSystem::new(
+            Config::new()->useServerControl(Server::via(
+                function($command) {
+                    $this->assertSame(
+                        "composer '--ansi' 'update'",
+                        $command->toString(),
+                    );
+                    $this->assertSame('/somewhere/', $command->workingDirectory()->match(
                         static fn($path) => $path->toString(),
                         static fn() => null,
+                    ));
+
+                    return Attempt::result(
+                        Builder::foreground(2)
+                            ->success([
+                                ['some output', 'output'],
+                                ['some error', 'error'],
+                            ])
+                            ->build(),
                     );
-            }))
-            ->willReturn($process = $this->createMock(Process::class));
-        $process
-            ->expects($this->once())
-            ->method('output')
-            ->willReturn(new Output\Output(Sequence::of(
-                [Str::of('some output'), Output\Type::output],
-                [Str::of('some error'), Output\Type::error],
-            )));
+                },
+            )),
+        );
+
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 ["\n"],
                 true,
                 [],
@@ -152,14 +142,14 @@ class ComposerUpdateTest extends TestCase
             $os,
             Activity::start,
             Set::of(Triggers::composerUpdate),
-        );
+        )->unwrap();
         $this->assertSame(
             ['Update dependencies? [Y/n] ', 'some output', 'some error', "Dependencies updated!\n"],
-            $console->environment()->outputs(),
-        );
-        $this->assertSame(
-            [],
-            $console->environment()->errors(),
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
         );
     }
 
@@ -167,12 +157,9 @@ class ComposerUpdateTest extends TestCase
     {
         $trigger = new ComposerUpdate;
 
-        $os = $this->createMock(OperatingSystem::class);
-        $os
-            ->expects($this->never())
-            ->method('control');
+        $os = OperatingSystem::new();
         $console = Console::of(
-            Environment\InMemory::of(
+            Environment::inMemory(
                 ["n\n"],
                 true,
                 [],
@@ -188,10 +175,14 @@ class ComposerUpdateTest extends TestCase
             $os,
             Activity::start,
             Set::of(Triggers::composerUpdate),
-        );
+        )->unwrap();
         $this->assertSame(
             ['Update dependencies? [Y/n] '],
-            $console->environment()->outputs(),
+            $console
+                ->environment()
+                ->outputted()
+                ->map(static fn($chunk) => $chunk[0]->toString())
+                ->toList(),
         );
     }
 }

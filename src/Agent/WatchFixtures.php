@@ -13,6 +13,7 @@ use Innmind\Url\Path;
 
 final class WatchFixtures implements Agent
 {
+    #[\Override]
     public function __invoke(
         OperatingSystem $os,
         Path $project,
@@ -25,7 +26,7 @@ final class WatchFixtures implements Agent
             return null;
         }
 
-        $filesystem->watch($fixtures)(
+        $_ = $filesystem->watch($fixtures)(
             $activities,
             static fn(Activities $activities, $continuation) => $continuation->continue(
                 $activities->push(Activity::fixturesModified),

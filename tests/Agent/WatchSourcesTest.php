@@ -14,18 +14,24 @@ use Innmind\LabStation\{
 };
 use Innmind\OperatingSystem\{
     OperatingSystem,
-    Filesystem,
+    Config,
 };
-use Innmind\FileWatch\{
-    Ping,
-    Continuation,
+use Innmind\Server\Control\{
+    Server,
+    Server\Process\Builder,
+};
+use Innmind\Time\Halt;
+use Innmind\Filesystem\{
+    Adapter,
+    Directory,
 };
 use Innmind\Url\Path;
 use Innmind\Immutable\{
-    Maybe,
     Set,
+    Attempt,
+    SideEffect,
 };
-use PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class WatchSourcesTest extends TestCase
 {
@@ -41,32 +47,39 @@ class WatchSourcesTest extends TestCase
     {
         $agent = new WatchSources;
 
-        $os = $this->createMock(OperatingSystem::class);
-        $filesystem = $this->createMock(Filesystem::class);
+        $adapter = Adapter::inMemory();
+        $_ = $adapter
+            ->add(Directory::named('src'))
+            ->unwrap();
+
+        $count = 0;
+        $os = OperatingSystem::new(
+            Config::new()
+                ->mountFilesystemVia(static fn() => Attempt::result($adapter))
+                ->useServerControl(Server::via(
+                    static function($command) use (&$count) {
+                        $builder = Builder::foreground(2);
+                        $builder = match ($count) {
+                            0 => $builder->success([['output', 'output']]),
+                            1 => $builder->success([['changed', 'output']]),
+                            2 => $builder->failed(),
+                        };
+                        ++$count;
+
+                        return Attempt::result($builder->build());
+                    },
+                ))
+                ->haltProcessVia(Halt::via(
+                    static fn() => Attempt::result(SideEffect::identity),
+                )),
+        );
+
         $activities = Activities::new(
-            $this->createMock(Trigger::class),
+            new Trigger\All,
             new Iteration,
             Set::of(...Triggers::cases()),
         );
         $project = Path::of('/vendor/package/');
-
-        $os
-            ->method('filesystem')
-            ->willReturn($filesystem);
-        $filesystem
-            ->expects($this->once())
-            ->method('watch')
-            ->with(Path::of('/vendor/package/src/'))
-            ->willReturn($ping = $this->createMock(Ping::class));
-        $ping
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($activities, $this->callback(static function($listen) use ($activities): bool {
-                $listen($activities, Continuation::of($activities)); // simulate folder modification
-
-                return true;
-            }))
-            ->willReturn(Maybe::just($activities));
 
         $this->assertSame($agent, $agent($os, $project, $activities));
         $this->assertEquals(

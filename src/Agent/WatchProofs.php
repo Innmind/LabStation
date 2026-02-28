@@ -13,6 +13,7 @@ use Innmind\Url\Path;
 
 final class WatchProofs implements Agent
 {
+    #[\Override]
     public function __invoke(
         OperatingSystem $os,
         Path $project,
@@ -25,7 +26,7 @@ final class WatchProofs implements Agent
             return null;
         }
 
-        $filesystem->watch($proofs)(
+        $_ = $filesystem->watch($proofs)(
             $activities,
             static fn(Activities $activities, $continuation) => $continuation->continue(
                 $activities->push(Activity::proofsModified),

@@ -5,8 +5,12 @@ namespace Innmind\LabStation;
 
 use Innmind\CLI\Console;
 use Innmind\OperatingSystem\OperatingSystem;
-use Innmind\TimeContinuum\Earth\Period\Millisecond;
-use Innmind\Immutable\Set;
+use Innmind\Time\Period;
+use Innmind\Immutable\{
+    Set,
+    Attempt,
+    Sequence,
+};
 
 final class Activities
 {
@@ -33,10 +37,13 @@ final class Activities
         $this->activities = $activities;
     }
 
+    /**
+     * @return Attempt<Console>
+     */
     public function __invoke(
         Console $console,
         OperatingSystem $os,
-    ): Console {
+    ): Attempt {
         // If no activities yet we wait a little bit to avoid always calling
         // this method.
         // The better approach would be to use sockets and to monitor them so we
@@ -46,24 +53,32 @@ final class Activities
         // exit this method periodically to allow the source to be restarted in
         // order to check if any agent crashed in order to restart it.
         if (\count($this->activities) === 0) {
-            $os->process()->halt(Millisecond::of(500));
+            return $os
+                ->process()
+                ->halt(Period::millisecond(500))
+                ->map(static fn() => $console);
         }
 
-        while ($activity = \array_shift($this->activities)) {
-            $this->iteration->start();
-            $console = ($this->trigger)(
-                $console,
-                $os,
-                $activity,
-                $this->triggers,
-            );
+        $activities = Sequence::of(...$this->activities);
+        $this->activities = [];
 
-            if ($activity !== Activity::start) {
-                $console = $this->iteration->end($console);
-            }
-        }
+        return $activities
+            ->sink($console)
+            ->attempt(function($console, $activity) use ($os) {
+                $this->iteration->start();
+                $console = ($this->trigger)(
+                    $console,
+                    $os,
+                    $activity,
+                    $this->triggers,
+                );
 
-        return $console;
+                if ($activity !== Activity::start) {
+                    return $console->flatMap($this->iteration->end(...));
+                }
+
+                return $console;
+            });
     }
 
     /**

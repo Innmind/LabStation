@@ -11,11 +11,17 @@ use Innmind\LabStation\{
 };
 use Innmind\CLI\Console;
 use Innmind\OperatingSystem\OperatingSystem;
-use Innmind\Server\Control\Server\Command;
+use Innmind\Server\Control\Server\{
+    Command,
+    Process,
+};
 use Innmind\Filesystem\Name;
 use Innmind\Immutable\{
     Map,
     Set,
+    Attempt,
+    Str,
+    SideEffect,
 };
 
 final class Tests implements Trigger
@@ -27,44 +33,54 @@ final class Tests implements Trigger
         $this->iteration = $iteration;
     }
 
+    #[\Override]
     public function __invoke(
         Console $console,
         OperatingSystem $os,
         Activity $activity,
         Set $triggers,
-    ): Console {
+    ): Attempt {
         if (!$triggers->contains(Triggers::tests)) {
-            return $console;
+            return Attempt::result($console);
         }
 
         return match ($activity) {
             Activity::sourcesModified => $this->attempt($console, $os),
             Activity::testsModified => $this->attempt($console, $os),
             Activity::fixturesModified => $this->attempt($console, $os),
-            default => $console,
+            default => Attempt::result($console),
         };
     }
 
-    private function attempt(Console $console, OperatingSystem $os): Console
+    /**
+     * @return Attempt<Console>
+     */
+    private function attempt(Console $console, OperatingSystem $os): Attempt
     {
         return $os
             ->filesystem()
             ->mount($console->workingDirectory())
-            ->get(Name::of('phpunit.xml.dist'))
-            ->match(
-                fn() => $this->run($console, $os),
-                static fn() => $console,
+            ->flatMap(
+                fn($adapter) => $adapter
+                    ->get(Name::of('phpunit.xml.dist'))
+                    ->match(
+                        fn() => $this->run($console, $os),
+                        static fn() => Attempt::result($console),
+                    ),
             );
     }
 
-    private function run(Console $console, OperatingSystem $os): Console
+    /**
+     * @return Attempt<Console>
+     */
+    private function run(Console $console, OperatingSystem $os): Attempt
     {
         /** @var Map<non-empty-string, string> */
         $variables = $console
             ->variables()
             ->filter(static fn($key) => $key === 'PATH');
 
-        $process = $os
+        return $os
             ->control()
             ->processes()
             ->execute(
@@ -73,12 +89,29 @@ final class Tests implements Trigger
                     ->withOption('fail-on-warning')
                     ->withWorkingDirectory($console->workingDirectory())
                     ->withEnvironments($variables),
+            )
+            ->eitherWay(
+                fn($process) => $this->phpunit($process, $console, $os),
+                static fn() => $console->output(Str::of("Failed to run PHPUnit\n")),
             );
+    }
+
+    /**
+     * @return Attempt<Console>
+     */
+    private function phpunit(
+        Process $process,
+        Console $console,
+        OperatingSystem $os,
+    ): Attempt {
         $console = $process
             ->output()
-            ->reduce(
-                $console,
-                static fn(Console $console, $line) => $console->output($line),
+            ->map(static fn($chunk) => $chunk->data())
+            ->sink($console)
+            ->attempt(static fn(Console $console, $line) => $console->output($line))
+            ->match(
+                static fn($console) => $console,
+                static fn($e) => $e,
             );
         $successful = $process->wait()->match(
             static fn() => true,
@@ -89,8 +122,12 @@ final class Tests implements Trigger
             $this->iteration->failing();
         }
 
+        if ($console instanceof \Throwable) {
+            return Attempt::error($console);
+        }
+
         if ($console->options()->contains('silent')) {
-            return $console;
+            return Attempt::result($console);
         }
 
         return $os
@@ -104,10 +141,12 @@ final class Tests implements Trigger
                     },
                 ),
             )
-            ->wait()
-            ->match(
-                static fn() => $console,
-                static fn() => $console,
-            );
+            ->flatMap(
+                static fn($process) => $process
+                    ->wait()
+                    ->attempt(static fn() => new \Exception)
+                    ->recover(static fn() => Attempt::result(SideEffect::identity)),
+            )
+            ->map(static fn() => $console);
     }
 }

@@ -11,11 +11,17 @@ use Innmind\LabStation\{
 };
 use Innmind\CLI\Console;
 use Innmind\OperatingSystem\OperatingSystem;
-use Innmind\Server\Control\Server\Command;
+use Innmind\Server\Control\Server\{
+    Command,
+    Process,
+};
 use Innmind\Filesystem\Name;
 use Innmind\Immutable\{
     Map,
     Set,
+    Attempt,
+    Str,
+    SideEffect,
 };
 
 final class CodingStandard implements Trigger
@@ -27,14 +33,15 @@ final class CodingStandard implements Trigger
         $this->iteration = $iteration;
     }
 
+    #[\Override]
     public function __invoke(
         Console $console,
         OperatingSystem $os,
         Activity $activity,
         Set $triggers,
-    ): Console {
+    ): Attempt {
         if (!$triggers->contains(Triggers::codingStandard)) {
-            return $console;
+            return Attempt::result($console);
         }
 
         return match ($activity) {
@@ -43,28 +50,37 @@ final class CodingStandard implements Trigger
             Activity::proofsModified => $this->attempt($console, $os),
             Activity::fixturesModified => $this->attempt($console, $os),
             Activity::propertiesModified => $this->attempt($console, $os),
-            default => $console,
+            default => Attempt::result($console),
         };
     }
 
-    private function attempt(Console $console, OperatingSystem $os): Console
+    /**
+     * @return Attempt<Console>
+     */
+    private function attempt(Console $console, OperatingSystem $os): Attempt
     {
-        $directory = $os->filesystem()->mount($console->workingDirectory());
-
-        return $directory
-            ->get(Name::of('.php_cs.dist'))
-            ->otherwise(static fn() => $directory->get(Name::of('.php-cs-fixer.dist.php')))
-            ->match(
-                fn($file) => $this->run($console, $os, $file->name()),
-                static fn() => $console,
+        return $os
+            ->filesystem()
+            ->mount($console->workingDirectory())
+            ->flatMap(
+                fn($directory) => $directory
+                    ->get(Name::of('.php_cs.dist'))
+                    ->otherwise(static fn() => $directory->get(Name::of('.php-cs-fixer.dist.php')))
+                    ->match(
+                        fn($file) => $this->run($console, $os, $file->name()),
+                        static fn() => Attempt::result($console),
+                    ),
             );
     }
 
+    /**
+     * @return Attempt<Console>
+     */
     private function run(
         Console $console,
         OperatingSystem $os,
         Name $file,
-    ): Console {
+    ): Attempt {
         /** @var Map<non-empty-string, string> */
         $variables = $console
             ->variables()
@@ -87,15 +103,32 @@ final class CodingStandard implements Trigger
                 ->withArgument('udiff');
         }
 
-        $process = $os
+        return $os
             ->control()
             ->processes()
-            ->execute($command);
+            ->execute($command)
+            ->eitherWay(
+                fn($process) => $this->cs($process, $console, $os),
+                static fn() => $console->output(Str::of("Failed to run CS\n")),
+            );
+    }
+
+    /**
+     * @return Attempt<Console>
+     */
+    private function cs(
+        Process $process,
+        Console $console,
+        OperatingSystem $os,
+    ): Attempt {
         $console = $process
             ->output()
-            ->reduce(
-                $console,
-                static fn(Console $console, $line) => $console->output($line),
+            ->map(static fn($chunk) => $chunk->data())
+            ->sink($console)
+            ->attempt(static fn(Console $console, $line) => $console->output($line))
+            ->match(
+                static fn($console) => $console,
+                static fn($e) => $e,
             );
         $successful = $process->wait()->match(
             static fn() => true,
@@ -106,8 +139,12 @@ final class CodingStandard implements Trigger
             $this->iteration->failing();
         }
 
+        if ($console instanceof \Throwable) {
+            return Attempt::error($console);
+        }
+
         if ($console->options()->contains('silent')) {
-            return $console;
+            return Attempt::result($console);
         }
 
         return $os
@@ -121,10 +158,12 @@ final class CodingStandard implements Trigger
                     },
                 ),
             )
-            ->wait()
-            ->match(
-                static fn() => $console,
-                static fn() => $console,
-            );
+            ->flatMap(
+                static fn($process) => $process
+                    ->wait()
+                    ->attempt(static fn() => new \Exception)
+                    ->recover(static fn() => Attempt::result(SideEffect::identity)),
+            )
+            ->map(static fn() => $console);
     }
 }

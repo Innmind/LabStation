@@ -5,10 +5,11 @@ namespace Innmind\LabStation;
 
 use Innmind\CLI\Console;
 use Innmind\OperatingSystem\OperatingSystem;
-use Innmind\Mantle\Forerunner;
+use Innmind\Async\Scheduler;
 use Innmind\Immutable\{
     Set,
     Sequence,
+    Attempt,
 };
 
 final class Monitor
@@ -36,28 +37,27 @@ final class Monitor
 
     /**
      * @param Set<Triggers> $triggers
+     *
+     * @return Attempt<Console>
      */
-    public function __invoke(Console $console, Set $triggers): Console
+    public function __invoke(Console $console, Set $triggers): Attempt
     {
         $project = $console->workingDirectory();
-        $run = Forerunner::of($this->os);
+        $scheduler = Scheduler::of($this->os);
         $activities = Activities::new(
             $this->trigger,
             $this->iteration,
             $triggers,
         );
-        /** @var array{Console, boolean} */
-        $carry = [$console, false];
 
-        [$console] = $run(
-            $carry,
-            new Monitor\Loop(
-                $this->agents,
-                $activities,
-                $project,
-            ),
-        );
-
-        return $console;
+        return $scheduler
+            ->sink(Attempt::result($console))
+            ->with(
+                new Monitor\Loop(
+                    $this->agents,
+                    $activities,
+                    $project,
+                ),
+            );
     }
 }

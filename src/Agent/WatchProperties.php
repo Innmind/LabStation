@@ -13,6 +13,7 @@ use Innmind\Url\Path;
 
 final class WatchProperties implements Agent
 {
+    #[\Override]
     public function __invoke(
         OperatingSystem $os,
         Path $project,
@@ -25,7 +26,7 @@ final class WatchProperties implements Agent
             return null;
         }
 
-        $filesystem->watch($properties)(
+        $_ = $filesystem->watch($properties)(
             $activities,
             static fn(Activities $activities, $continuation) => $continuation->continue(
                 $activities->push(Activity::propertiesModified),
