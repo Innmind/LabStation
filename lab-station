@@ -20,9 +20,11 @@ use Innmind\CLI\{
     Environment,
 };
 use Innmind\OperatingSystem\OperatingSystem;
+use Innmind\Immutable\Attempt;
 
 new class extends Main {
-    protected function main(Environment $env, OperatingSystem $os): Environment
+    #[\Override]
+    protected function main(Environment $env, OperatingSystem $os): Attempt
     {
         $run = bootstrap($os);
 
