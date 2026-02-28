@@ -20,6 +20,7 @@ use Innmind\Server\Control\{
     Server,
     Server\Process\Builder,
 };
+use Innmind\Time\Halt;
 use Innmind\Filesystem\{
     Adapter,
     Directory,
@@ -28,6 +29,7 @@ use Innmind\Url\Path;
 use Innmind\Immutable\{
     Set,
     Attempt,
+    SideEffect,
 };
 use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
@@ -66,6 +68,9 @@ class WatchProofsTest extends TestCase
 
                         return Attempt::result($builder->build());
                     },
+                ))
+                ->haltProcessVia(Halt::via(
+                    static fn() => Attempt::result(SideEffect::identity),
                 )),
         );
 
