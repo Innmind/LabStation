@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.3.1 - 2026-02-28
+
+### Fixed
+
+- `lab-station` always crashed since dependency update
+
 ## 4.3.0 - 2026-02-28
 
 ### Changed
