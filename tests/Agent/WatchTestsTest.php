@@ -20,6 +20,7 @@ use Innmind\Server\Control\{
     Server,
     Server\Process\Builder,
 };
+use Innmind\Time\Halt;
 use Innmind\Filesystem\{
     Adapter,
     Directory,
@@ -28,8 +29,9 @@ use Innmind\Url\Path;
 use Innmind\Immutable\{
     Set,
     Attempt,
+    SideEffect,
 };
-use PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class WatchTestsTest extends TestCase
 {
@@ -66,11 +68,14 @@ class WatchTestsTest extends TestCase
 
                         return Attempt::result($builder->build());
                     },
+                ))
+                ->haltProcessVia(Halt::via(
+                    static fn() => Attempt::result(SideEffect::identity),
                 )),
         );
 
         $activities = Activities::new(
-            $this->createMock(Trigger::class),
+            new Trigger\All,
             new Iteration,
             Set::of(...Triggers::cases()),
         );
@@ -92,7 +97,7 @@ class WatchTestsTest extends TestCase
 
         $os = OperatingSystem::new();
         $activities = Activities::new(
-            $this->createMock(Trigger::class),
+            new Trigger\All,
             new Iteration,
             Set::of(...Triggers::cases()),
         );

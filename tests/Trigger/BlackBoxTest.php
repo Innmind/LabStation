@@ -35,9 +35,9 @@ use Innmind\Immutable\{
     Set as ISet,
     Attempt,
 };
-use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
     PHPUnit\BlackBox as BB,
+    PHPUnit\Framework\TestCase,
     Set,
 };
 
@@ -78,11 +78,11 @@ class BlackBoxTest extends TestCase
         ));
     }
 
-    public function testDoNothingWhenTriggerNotEnabled()
+    public function testDoNothingWhenTriggerNotEnabled(): BB\Proof
     {
-        $this
+        return $this
             ->forAll(Set::of(...Activity::cases()))
-            ->then(function($type) {
+            ->prove(function($type) {
                 $trigger = new BlackBox(new Iteration);
 
                 $os = OperatingSystem::new();
@@ -115,16 +115,16 @@ class BlackBoxTest extends TestCase
             });
     }
 
-    public function testTriggerTestsSuiteWhenActivity()
+    public function testTriggerTestsSuiteWhenActivity(): BB\Proof
     {
-        $this
+        return $this
             ->forAll(Set::of(
                 Activity::sourcesModified,
                 Activity::proofsModified,
                 Activity::fixturesModified,
                 Activity::propertiesModified,
             ))
-            ->then(function($type) {
+            ->prove(function($type) {
                 $trigger = new BlackBox(
                     $iteration = new Iteration,
                 );
@@ -204,16 +204,16 @@ class BlackBoxTest extends TestCase
             });
     }
 
-    public function testDoesntTriggerWhenNoBlackBoxFile()
+    public function testDoesntTriggerWhenNoBlackBoxFile(): BB\Proof
     {
-        $this
+        return $this
             ->forAll(Set::of(
                 Activity::sourcesModified,
                 Activity::proofsModified,
                 Activity::fixturesModified,
                 Activity::propertiesModified,
             ))
-            ->then(function($type) {
+            ->prove(function($type) {
                 $trigger = new BlackBox(
                     $iteration = new Iteration,
                 );

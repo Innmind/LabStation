@@ -26,7 +26,7 @@ final class WatchTests implements Agent
             return null;
         }
 
-        $filesystem->watch($tests)(
+        $_ = $filesystem->watch($tests)(
             $activities,
             static fn(Activities $activities, $continuation) => $continuation->continue(
                 $activities->push(Activity::testsModified),
