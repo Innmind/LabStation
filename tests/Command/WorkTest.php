@@ -11,7 +11,7 @@ use Innmind\LabStation\{
 };
 use Innmind\CLI\Command;
 use Innmind\OperatingSystem\OperatingSystem;
-use PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class WorkTest extends TestCase
 {
@@ -23,7 +23,7 @@ class WorkTest extends TestCase
                 new Monitor(
                     OperatingSystem::new(),
                     new Iteration,
-                    $this->createMock(Trigger::class),
+                    new Trigger\All,
                 ),
             ),
         );
@@ -43,7 +43,7 @@ class WorkTest extends TestCase
                 new Monitor(
                     OperatingSystem::new(),
                     new Iteration,
-                    $this->createMock(Trigger::class),
+                    new Trigger\All,
                 ),
             ))->usage()->toString(),
         );

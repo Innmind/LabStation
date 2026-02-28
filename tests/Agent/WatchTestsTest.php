@@ -29,7 +29,7 @@ use Innmind\Immutable\{
     Set,
     Attempt,
 };
-use PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class WatchTestsTest extends TestCase
 {
@@ -70,7 +70,7 @@ class WatchTestsTest extends TestCase
         );
 
         $activities = Activities::new(
-            $this->createMock(Trigger::class),
+            new Trigger\All,
             new Iteration,
             Set::of(...Triggers::cases()),
         );
@@ -92,7 +92,7 @@ class WatchTestsTest extends TestCase
 
         $os = OperatingSystem::new();
         $activities = Activities::new(
-            $this->createMock(Trigger::class),
+            new Trigger\All,
             new Iteration,
             Set::of(...Triggers::cases()),
         );

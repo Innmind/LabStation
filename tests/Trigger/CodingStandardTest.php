@@ -34,9 +34,9 @@ use Innmind\Immutable\{
     Set,
     Attempt,
 };
-use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
     PHPUnit\BlackBox,
+    PHPUnit\Framework\TestCase,
     Set as DataSet,
 };
 
@@ -142,9 +142,9 @@ class CodingStandardTest extends TestCase
         );
     }
 
-    public function testTriggerTestsSuiteWhenSourcesModified()
+    public function testTriggerTestsSuiteWhenSourcesModified(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(DataSet::of(
                 Activity::sourcesModified,
                 Activity::proofsModified,
@@ -152,7 +152,7 @@ class CodingStandardTest extends TestCase
                 Activity::fixturesModified,
                 Activity::propertiesModified,
             ))
-            ->then(function($activity) {
+            ->prove(function($activity) {
                 $trigger = new CodingStandard(
                     $iteration = new Iteration,
                 );

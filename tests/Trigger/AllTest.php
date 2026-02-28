@@ -16,7 +16,7 @@ use Innmind\CLI\{
 };
 use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\Immutable\Set;
-use PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class AllTest extends TestCase
 {
@@ -28,9 +28,36 @@ class AllTest extends TestCase
     public function testTriggerAllSubTriggers()
     {
         $trigger = new All(
-            $trigger1 = $this->createMock(Trigger::class),
-            $trigger2 = $this->createMock(Trigger::class),
-            $trigger3 = $this->createMock(Trigger::class),
+            new class implements Trigger {
+                public function __invoke(
+                    Console $console,
+                    OperatingSystem $os,
+                    Activity $activity,
+                    Set $triggers,
+                ): Console {
+                    return $console;
+                }
+            },
+            new class implements Trigger {
+                public function __invoke(
+                    Console $console,
+                    OperatingSystem $os,
+                    Activity $activity,
+                    Set $triggers,
+                ): Console {
+                    return $console;
+                }
+            },
+            new class implements Trigger {
+                public function __invoke(
+                    Console $console,
+                    OperatingSystem $os,
+                    Activity $activity,
+                    Set $triggers,
+                ): Console {
+                    return $console;
+                }
+            },
         );
         $triggers = Set::of();
         $activity = Activity::start;
@@ -46,21 +73,6 @@ class AllTest extends TestCase
             new Options,
         );
         $os = OperatingSystem::new();
-        $trigger1
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($console, $os, $activity, $triggers)
-            ->willReturn($console);
-        $trigger2
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($console, $os, $activity, $triggers)
-            ->willReturn($console);
-        $trigger3
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($console, $os, $activity, $triggers)
-            ->willReturn($console);
 
         $this->assertSame($console, $trigger($console, $os, $activity, $triggers));
     }

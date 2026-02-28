@@ -27,7 +27,7 @@ use Innmind\Immutable\{
     Set,
     Attempt,
 };
-use PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class ComposerUpdateTest extends TestCase
 {

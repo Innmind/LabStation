@@ -34,9 +34,9 @@ use Innmind\Immutable\{
     Set as ISet,
     Attempt,
 };
-use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
     PHPUnit\BlackBox,
+    PHPUnit\Framework\TestCase,
     Set,
 };
 
@@ -78,11 +78,11 @@ class TestsTest extends TestCase
         ));
     }
 
-    public function testDoNothingWhenTriggerNotEnabled()
+    public function testDoNothingWhenTriggerNotEnabled(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(Set::of(...Activity::cases()))
-            ->then(function($type) {
+            ->prove(function($type) {
                 $trigger = new Tests(new Iteration);
                 $os = OperatingSystem::new();
                 $console = Console::of(
@@ -113,15 +113,15 @@ class TestsTest extends TestCase
             });
     }
 
-    public function testTriggerTestsSuiteWhenActivity()
+    public function testTriggerTestsSuiteWhenActivity(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(Set::of(
                 Activity::sourcesModified,
                 Activity::testsModified,
                 Activity::fixturesModified,
             ))
-            ->then(function($type) {
+            ->prove(function($type) {
                 $trigger = new Tests(
                     $iteration = new Iteration,
                 );
@@ -200,15 +200,15 @@ class TestsTest extends TestCase
             });
     }
 
-    public function testDoesntTriggerWhenNoPHPUnitFile()
+    public function testDoesntTriggerWhenNoPHPUnitFile(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(Set::of(
                 Activity::sourcesModified,
                 Activity::testsModified,
                 Activity::fixturesModified,
             ))
-            ->then(function($type) {
+            ->prove(function($type) {
                 $trigger = new Tests(
                     $iteration = new Iteration,
                 );
