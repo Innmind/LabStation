@@ -9,7 +9,11 @@ use Innmind\LabStation\{
 };
 use Innmind\CLI\Console;
 use Innmind\OperatingSystem\OperatingSystem;
-use Innmind\Immutable\Set;
+use Innmind\Immutable\{
+    Set,
+    Sequence,
+    Attempt,
+};
 
 final class All implements Trigger
 {
@@ -30,11 +34,14 @@ final class All implements Trigger
         OperatingSystem $os,
         Activity $activity,
         Set $triggers,
-    ): Console {
-        foreach ($this->triggers as $trigger) {
-            $console = $trigger($console, $os, $activity, $triggers);
-        }
-
-        return $console;
+    ): Attempt {
+        return Sequence::of(...$this->triggers)
+            ->sink($console)
+            ->attempt(static fn($console, $trigger) => $trigger(
+                $console,
+                $os,
+                $activity,
+                $triggers,
+            ));
     }
 }

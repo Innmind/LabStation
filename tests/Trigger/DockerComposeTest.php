@@ -66,7 +66,7 @@ class DockerComposeTest extends TestCase
             $os,
             Activity::sourcesModified,
             Set::of(Triggers::dockerCompose),
-        ));
+        )->unwrap());
     }
 
     public function testDoesntStartDockerComposeWhenNoConfigFile()
@@ -98,7 +98,7 @@ class DockerComposeTest extends TestCase
             $os,
             Activity::start,
             Set::of(Triggers::dockerCompose),
-        ));
+        )->unwrap());
     }
 
     public function testDoNothingWhenTriggerNotEnabled()
@@ -123,7 +123,7 @@ class DockerComposeTest extends TestCase
             $os,
             Activity::start,
             Set::of(),
-        );
+        )->unwrap();
         $this->assertSame(
             [],
             $console
@@ -183,6 +183,6 @@ class DockerComposeTest extends TestCase
             $os,
             Activity::start,
             Set::of(Triggers::dockerCompose),
-        ));
+        )->unwrap());
     }
 }

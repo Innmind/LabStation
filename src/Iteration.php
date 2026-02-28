@@ -4,7 +4,10 @@ declare(strict_types = 1);
 namespace Innmind\LabStation;
 
 use Innmind\CLI\Console;
-use Innmind\Immutable\Str;
+use Innmind\Immutable\{
+    Str,
+    Attempt,
+};
 
 final class Iteration
 {
@@ -20,17 +23,20 @@ final class Iteration
         $this->shouldClearTerminal = false;
     }
 
-    public function end(Console $console): Console
+    /**
+     * @return Attempt<Console>
+     */
+    public function end(Console $console): Attempt
     {
         if (!$this->shouldClearTerminal) {
-            return $console;
+            return Attempt::result($console);
         }
 
         if ($console->options()->contains('keep-output')) {
-            return $console;
+            return Attempt::result($console);
         }
 
         // clear terminal
-        return $console->output(Str::of("\033[2J\033[H"))->unwrap();
+        return $console->output(Str::of("\033[2J\033[H"));
     }
 }

@@ -67,7 +67,7 @@ class PsalmTest extends TestCase
             $os,
             Activity::start,
             Set::of(Triggers::psalm),
-        ));
+        )->unwrap());
     }
 
     public function testDoNothingWhenPsalmNotInstalled()
@@ -95,7 +95,7 @@ class PsalmTest extends TestCase
             $os,
             Activity::sourcesModified,
             Set::of(Triggers::psalm),
-        ));
+        )->unwrap());
     }
 
     public function testDoNothingWhenTriggerNotEnabled()
@@ -119,7 +119,7 @@ class PsalmTest extends TestCase
             $os,
             Activity::sourcesModified,
             Set::of(),
-        );
+        )->unwrap();
         $this->assertSame(
             [],
             $console
@@ -197,8 +197,8 @@ class PsalmTest extends TestCase
             $os,
             Activity::sourcesModified,
             Set::of(Triggers::psalm),
-        );
-        $console = $iteration->end($console);
+        )->unwrap();
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             ['some output', 'some error', "\033[2J\033[H"],
             $console
@@ -268,8 +268,8 @@ class PsalmTest extends TestCase
             $os,
             Activity::sourcesModified,
             Set::of(Triggers::psalm),
-        );
-        $console = $iteration->end($console);
+        )->unwrap();
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             [],
             $console
@@ -342,8 +342,8 @@ class PsalmTest extends TestCase
             $os,
             Activity::sourcesModified,
             Set::of(Triggers::psalm),
-        );
-        $console = $iteration->end($console);
+        )->unwrap();
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             [],
             $console
@@ -410,8 +410,8 @@ class PsalmTest extends TestCase
             $os,
             Activity::sourcesModified,
             Set::of(Triggers::psalm),
-        );
-        $console = $iteration->end($console);
+        )->unwrap();
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             ["\033[2J\033[H"],
             $console

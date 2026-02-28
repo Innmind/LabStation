@@ -75,7 +75,7 @@ class BlackBoxTest extends TestCase
             $os,
             Activity::start,
             ISet::of(Triggers::tests),
-        ));
+        )->unwrap());
     }
 
     public function testDoNothingWhenTriggerNotEnabled(): BB\Proof
@@ -103,7 +103,7 @@ class BlackBoxTest extends TestCase
                     $os,
                     $type,
                     ISet::of(),
-                );
+                )->unwrap();
                 $this->assertSame(
                     [],
                     $console
@@ -191,8 +191,8 @@ class BlackBoxTest extends TestCase
                     $os,
                     $type,
                     ISet::of(Triggers::proofs),
-                );
-                $console = $iteration->end($console);
+                )->unwrap();
+                $console = $iteration->end($console)->unwrap();
                 $this->assertSame(
                     ['some output', 'some error', "\033[2J\033[H"],
                     $console
@@ -242,8 +242,8 @@ class BlackBoxTest extends TestCase
                     $os,
                     $type,
                     ISet::of(Triggers::proofs),
-                );
-                $console = $iteration->end($console);
+                )->unwrap();
+                $console = $iteration->end($console)->unwrap();
                 $this->assertSame(
                     ["\033[2J\033[H"],
                     $console
@@ -314,8 +314,8 @@ class BlackBoxTest extends TestCase
             $os,
             Activity::sourcesModified,
             ISet::of(Triggers::proofs),
-        );
-        $console = $iteration->end($console);
+        )->unwrap();
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             [],
             $console
@@ -388,8 +388,8 @@ class BlackBoxTest extends TestCase
             $os,
             Activity::sourcesModified,
             ISet::of(Triggers::proofs),
-        );
-        $console = $iteration->end($console);
+        )->unwrap();
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             [],
             $console
@@ -455,8 +455,8 @@ class BlackBoxTest extends TestCase
             $os,
             Activity::sourcesModified,
             ISet::of(Triggers::proofs),
-        );
-        $console = $iteration->end($console);
+        )->unwrap();
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             ["\033[2J\033[H"],
             $console
