@@ -16,6 +16,7 @@ use Innmind\Immutable\{
     Map,
     Str,
     Set,
+    Attempt,
 };
 
 final class DockerCompose implements Trigger
@@ -26,31 +27,39 @@ final class DockerCompose implements Trigger
         OperatingSystem $os,
         Activity $activity,
         Set $triggers,
-    ): Console {
+    ): Attempt {
         if (!$triggers->contains(Triggers::dockerCompose)) {
-            return $console;
+            return Attempt::result($console);
         }
 
         return match ($activity) {
             Activity::start => $this->attempt($console, $os),
-            default => $console,
+            default => Attempt::result($console),
         };
     }
 
-    private function attempt(Console $console, OperatingSystem $os): Console
+    /**
+     * @return Attempt<Console>
+     */
+    private function attempt(Console $console, OperatingSystem $os): Attempt
     {
         return $os
             ->filesystem()
             ->mount($console->workingDirectory())
-            ->unwrap()
-            ->get(Name::of('docker-compose.yml'))
-            ->match(
-                fn() => $this->run($console, $os),
-                static fn() => $console,
+            ->flatMap(
+                fn($adapter) => $adapter
+                    ->get(Name::of('docker-compose.yml'))
+                    ->match(
+                        fn() => $this->run($console, $os),
+                        static fn() => Attempt::result($console),
+                    ),
             );
     }
 
-    private function run(Console $console, OperatingSystem $os): Console
+    /**
+     * @return Attempt<Console>
+     */
+    private function run(Console $console, OperatingSystem $os): Attempt
     {
         /** @var Map<non-empty-string, string> */
         $variables = $console
@@ -67,13 +76,14 @@ final class DockerCompose implements Trigger
                     ->withWorkingDirectory($console->workingDirectory())
                     ->withEnvironments($variables),
             )
-            ->either()
-            ->flatMap(static fn($process) => $process->wait())
-            ->match(
-                static fn() => $console,
-                static fn() => $console
-                    ->error(Str::of("Failed to start docker\n"))
-                    ->unwrap(),
-            );
+            ->flatMap(
+                static fn($process) => $process
+                    ->wait()
+                    ->attempt(static fn() => new \Exception),
+            )
+            ->map(static fn() => $console)
+            ->recover(static fn() => $console->error(
+                Str::of("Failed to start docker\n"),
+            ));
     }
 }

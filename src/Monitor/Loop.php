@@ -12,6 +12,7 @@ use Innmind\CLI\Console;
 use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\Url\Path;
 use Innmind\Immutable\{
+    Attempt,
     Sequence,
     Predicate\Instance,
 };
@@ -22,6 +23,7 @@ final class Loop
     private Sequence $agents;
     private Activities $activities;
     private Path $project;
+    private bool $started = false;
 
     /**
      * @param Sequence<Agent> $agents
@@ -37,22 +39,22 @@ final class Loop
     }
 
     /**
-     * @param array{Console, boolean} $carry
-     * @param Continuation<array{Console, boolean}> $continuation
+     * @param Attempt<Console> $console
+     * @param Continuation<Attempt<Console>> $continuation
      *
-     * @return Continuation<array{Console, boolean}>
+     * @return Continuation<Attempt<Console>>
      */
     public function __invoke(
-        array $carry,
+        Attempt $console,
         OperatingSystem $os,
         Continuation $continuation,
     ): Continuation {
-        [$console, $started] = $carry;
+        if (!$this->started) {
+            $this->started = true;
 
-        if (!$started) {
             return $continuation
                 ->schedule($this->agents->map($this->buildTask(...)))
-                ->carryWith([$console, true]);
+                ->carryWith($console);
         }
 
         $continuation = $continuation->schedule(
@@ -62,12 +64,14 @@ final class Loop
                 ->map($this->buildTask(...)),
         );
 
-        $console = ($this->activities)(
-            $console,
-            $os,
+        return $console->match(
+            fn($console) => $continuation->carryWith(
+                ($this->activities)($console, $os),
+            ),
+            static fn($e) => $continuation
+                ->carryWith(Attempt::error($e))
+                ->terminate(),
         );
-
-        return $continuation->carryWith([$console, $started]);
     }
 
     /**

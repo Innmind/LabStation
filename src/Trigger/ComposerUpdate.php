@@ -18,6 +18,7 @@ use Innmind\Immutable\{
     Map,
     Str,
     Set,
+    Attempt,
 };
 
 final class ComposerUpdate implements Trigger
@@ -28,35 +29,44 @@ final class ComposerUpdate implements Trigger
         OperatingSystem $os,
         Activity $activity,
         Set $triggers,
-    ): Console {
+    ): Attempt {
         if (!$triggers->contains(Triggers::composerUpdate)) {
-            return $console;
+            return Attempt::result($console);
         }
 
         return match ($activity) {
             Activity::start => $this->ask($console, $os),
-            default => $console,
+            default => Attempt::result($console),
         };
     }
 
-    private function ask(Console $console, OperatingSystem $os): Console
+    /**
+     * @return Attempt<Console>
+     */
+    private function ask(Console $console, OperatingSystem $os): Attempt
     {
         $ask = Question::of('Update dependencies? [Y/n]');
-        [$response, $console] = $ask($console)->unwrap();
 
-        return $response
-            ->maybe()
-            ->filter(static fn($response) => match ($response->toString()) {
-                'y', '' => true,
-                default => false,
-            })
-            ->match(
-                fn() => $this->run($console, $os),
-                static fn() => $console,
-            );
+        return $ask($console)->flatMap(function($response) use ($os) {
+            [$response, $console] = $response;
+
+            return $response
+                ->maybe()
+                ->filter(static fn($response) => match ($response->toString()) {
+                    'y', '' => true,
+                    default => false,
+                })
+                ->match(
+                    fn() => $this->run($console, $os),
+                    static fn() => Attempt::result($console),
+                );
+        });
     }
 
-    private function run(Console $console, OperatingSystem $os): Console
+    /**
+     * @return Attempt<Console>
+     */
+    private function run(Console $console, OperatingSystem $os): Attempt
     {
         /** @var Map<non-empty-string, string> */
         $variables = $console->variables()->filter(
@@ -73,13 +83,15 @@ final class ComposerUpdate implements Trigger
                     ->withWorkingDirectory($console->workingDirectory())
                     ->withEnvironments($variables),
             )
-            ->unwrap()
-            ->output()
-            ->map(static fn($chunk) => $chunk->data())
-            ->sink($console)
-            ->attempt(static fn(Console $console, $line) => $console->output($line))
-            ->unwrap()
-            ->output(Str::of("Dependencies updated!\n"))
-            ->unwrap();
+            ->flatMap(
+                static fn($process) => $process
+                    ->output()
+                    ->map(static fn($chunk) => $chunk->data())
+                    ->sink($console)
+                    ->attempt(static fn(Console $console, $line) => $console->output($line)),
+            )
+            ->flatMap(static fn($console) => $console->output(
+                Str::of("Dependencies updated!\n"),
+            ));
     }
 }

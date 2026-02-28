@@ -61,7 +61,7 @@ class ComposerUpdateTest extends TestCase
             $os,
             Activity::sourcesModified,
             Set::of(Triggers::composerUpdate),
-        ));
+        )->unwrap());
     }
 
     public function testDoNothingWhenTriggerNotEnabled()
@@ -86,7 +86,7 @@ class ComposerUpdateTest extends TestCase
             $os,
             Activity::start,
             Set::of(),
-        );
+        )->unwrap();
         $this->assertSame(
             [],
             $console
@@ -142,7 +142,7 @@ class ComposerUpdateTest extends TestCase
             $os,
             Activity::start,
             Set::of(Triggers::composerUpdate),
-        );
+        )->unwrap();
         $this->assertSame(
             ['Update dependencies? [Y/n] ', 'some output', 'some error', "Dependencies updated!\n"],
             $console
@@ -175,7 +175,7 @@ class ComposerUpdateTest extends TestCase
             $os,
             Activity::start,
             Set::of(Triggers::composerUpdate),
-        );
+        )->unwrap();
         $this->assertSame(
             ['Update dependencies? [Y/n] '],
             $console

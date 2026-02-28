@@ -9,6 +9,7 @@ use Innmind\Async\Scheduler;
 use Innmind\Immutable\{
     Set,
     Sequence,
+    Attempt,
 };
 
 final class Monitor
@@ -36,8 +37,10 @@ final class Monitor
 
     /**
      * @param Set<Triggers> $triggers
+     *
+     * @return Attempt<Console>
      */
-    public function __invoke(Console $console, Set $triggers): Console
+    public function __invoke(Console $console, Set $triggers): Attempt
     {
         $project = $console->workingDirectory();
         $scheduler = Scheduler::of($this->os);
@@ -46,11 +49,9 @@ final class Monitor
             $this->iteration,
             $triggers,
         );
-        /** @var array{Console, boolean} */
-        $carry = [$console, false];
 
-        [$console] = $scheduler
-            ->sink($carry)
+        return $scheduler
+            ->sink(Attempt::result($console))
             ->with(
                 new Monitor\Loop(
                     $this->agents,
@@ -58,7 +59,5 @@ final class Monitor
                     $project,
                 ),
             );
-
-        return $console;
     }
 }

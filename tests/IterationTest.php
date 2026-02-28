@@ -30,7 +30,7 @@ class IterationTest extends TestCase
             new Options,
         );
 
-        $console = $iteration->end($console);
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             ["\033[2J\033[H"],
             $console
@@ -57,7 +57,7 @@ class IterationTest extends TestCase
         );
 
         $iteration->start();
-        $console = $iteration->end($console);
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             ["\033[2J\033[H"],
             $console
@@ -85,7 +85,7 @@ class IterationTest extends TestCase
 
         $iteration->start();
         $iteration->failing();
-        $console = $iteration->end($console);
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             [],
             $console
@@ -112,7 +112,7 @@ class IterationTest extends TestCase
         );
 
         $iteration->start();
-        $console = $iteration->end($console);
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             [],
             $console
@@ -140,7 +140,7 @@ class IterationTest extends TestCase
 
         $iteration->start();
         $iteration->failing();
-        $console = $iteration->end($console);
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             [],
             $console
@@ -168,9 +168,9 @@ class IterationTest extends TestCase
 
         $iteration->start();
         $iteration->failing();
-        $console = $iteration->end($console);
+        $console = $iteration->end($console)->unwrap();
         $iteration->start();
-        $console = $iteration->end($console);
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             ["\033[2J\033[H"],
             $console

@@ -15,7 +15,10 @@ use Innmind\CLI\{
     Command\Options,
 };
 use Innmind\OperatingSystem\OperatingSystem;
-use Innmind\Immutable\Set;
+use Innmind\Immutable\{
+    Set,
+    Attempt,
+};
 use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class AllTest extends TestCase
@@ -34,8 +37,8 @@ class AllTest extends TestCase
                     OperatingSystem $os,
                     Activity $activity,
                     Set $triggers,
-                ): Console {
-                    return $console;
+                ): Attempt {
+                    return Attempt::result($console);
                 }
             },
             new class implements Trigger {
@@ -44,8 +47,8 @@ class AllTest extends TestCase
                     OperatingSystem $os,
                     Activity $activity,
                     Set $triggers,
-                ): Console {
-                    return $console;
+                ): Attempt {
+                    return Attempt::result($console);
                 }
             },
             new class implements Trigger {
@@ -54,8 +57,8 @@ class AllTest extends TestCase
                     OperatingSystem $os,
                     Activity $activity,
                     Set $triggers,
-                ): Console {
-                    return $console;
+                ): Attempt {
+                    return Attempt::result($console);
                 }
             },
         );
@@ -74,6 +77,6 @@ class AllTest extends TestCase
         );
         $os = OperatingSystem::new();
 
-        $this->assertSame($console, $trigger($console, $os, $activity, $triggers));
+        $this->assertSame($console, $trigger($console, $os, $activity, $triggers)->unwrap());
     }
 }

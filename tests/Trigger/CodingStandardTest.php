@@ -76,7 +76,7 @@ class CodingStandardTest extends TestCase
             $os,
             Activity::start,
             Set::of(Triggers::codingStandard),
-        ));
+        )->unwrap());
     }
 
     public function testDoNothingWhenToolNotInstalled()
@@ -106,7 +106,7 @@ class CodingStandardTest extends TestCase
             $os,
             Activity::sourcesModified,
             Set::of(Triggers::codingStandard),
-        ));
+        )->unwrap());
     }
 
     public function testDoNothingWhenTriggerNotEnabled()
@@ -131,7 +131,7 @@ class CodingStandardTest extends TestCase
             $os,
             Activity::sourcesModified,
             Set::of(),
-        );
+        )->unwrap();
         $this->assertSame(
             [],
             $console
@@ -216,8 +216,8 @@ class CodingStandardTest extends TestCase
                     $os,
                     $activity,
                     Set::of(Triggers::codingStandard),
-                );
-                $console = $iteration->end($console);
+                )->unwrap();
+                $console = $iteration->end($console)->unwrap();
                 $this->assertSame(
                     ['some output', 'some error', "\033[2J\033[H"],
                     $console
@@ -288,8 +288,8 @@ class CodingStandardTest extends TestCase
             $os,
             Activity::sourcesModified,
             Set::of(Triggers::codingStandard),
-        );
-        $console = $iteration->end($console);
+        )->unwrap();
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             [],
             $console
@@ -365,8 +365,8 @@ class CodingStandardTest extends TestCase
             $os,
             Activity::testsModified,
             Set::of(Triggers::codingStandard),
-        );
-        $console = $iteration->end($console);
+        )->unwrap();
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             ['some output', 'some error', "\033[2J\033[H"],
             $console
@@ -439,8 +439,8 @@ class CodingStandardTest extends TestCase
             $os,
             Activity::sourcesModified,
             Set::of(Triggers::codingStandard),
-        );
-        $console = $iteration->end($console);
+        )->unwrap();
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             [],
             $console
@@ -506,8 +506,8 @@ class CodingStandardTest extends TestCase
             $os,
             Activity::sourcesModified,
             Set::of(Triggers::codingStandard),
-        );
-        $console = $iteration->end($console);
+        )->unwrap();
+        $console = $iteration->end($console)->unwrap();
         $this->assertSame(
             ["\033[2J\033[H"],
             $console

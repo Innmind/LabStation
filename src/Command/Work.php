@@ -46,7 +46,7 @@ final class Work implements Command
                 static fn() => Triggers::cases(),
             );
 
-        return Attempt::result(($this->monitor)($console, Set::of(...$triggers)));
+        return ($this->monitor)($console, Set::of(...$triggers));
     }
 
     /**
