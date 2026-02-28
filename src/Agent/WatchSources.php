@@ -21,7 +21,7 @@ final class WatchSources implements Agent
     ): ?Agent {
         $src = $project->resolve(Path::of('src/'));
 
-        $os->filesystem()->watch($src)(
+        $_ = $os->filesystem()->watch($src)(
             $activities,
             static fn(Activities $activities, $continuation) => $continuation->continue(
                 $activities->push(Activity::sourcesModified),
