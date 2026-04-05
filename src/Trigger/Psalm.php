@@ -84,6 +84,11 @@ final class Psalm implements Trigger
             ->execute(
                 Command::foreground('vendor/bin/psalm')
                     ->withOption('no-cache')
+                    ->withOption(\sprintf(
+                        'php-version=%s.%s',
+                        \PHP_MAJOR_VERSION,
+                        \PHP_MINOR_VERSION,
+                    ))
                     ->withWorkingDirectory($console->workingDirectory())
                     ->withEnvironments($variables),
             )
