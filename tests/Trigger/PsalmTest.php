@@ -147,9 +147,11 @@ class PsalmTest extends TestCase
                 ->mountFilesystemVia(static fn() => Attempt::result($adapter))
                 ->useServerControl(Server::via(
                     function($command) use (&$count) {
+                        $major = \PHP_MAJOR_VERSION;
+                        $minor = \PHP_MINOR_VERSION;
                         $this->assertSame(
                             match ($count) {
-                                0 => "vendor/bin/psalm '--no-cache'",
+                                0 => "vendor/bin/psalm '--no-cache' '--php-version=$major.$minor'",
                                 1 => "say 'Psalm : ok'",
                             },
                             $command->toString(),
@@ -226,9 +228,11 @@ class PsalmTest extends TestCase
                 ->mountFilesystemVia(static fn() => Attempt::result($adapter))
                 ->useServerControl(Server::via(
                     function($command) use (&$count) {
+                        $major = \PHP_MAJOR_VERSION;
+                        $minor = \PHP_MINOR_VERSION;
                         $this->assertSame(
                             match ($count) {
-                                0 => "vendor/bin/psalm '--no-cache'",
+                                0 => "vendor/bin/psalm '--no-cache' '--php-version=$major.$minor'",
                                 1 => "say 'Psalm : ok'",
                             },
                             $command->toString(),
@@ -297,9 +301,11 @@ class PsalmTest extends TestCase
                 ->mountFilesystemVia(static fn() => Attempt::result($adapter))
                 ->useServerControl(Server::via(
                     function($command) use (&$count) {
+                        $major = \PHP_MAJOR_VERSION;
+                        $minor = \PHP_MINOR_VERSION;
                         $this->assertSame(
                             match ($count) {
-                                0 => "vendor/bin/psalm '--no-cache'",
+                                0 => "vendor/bin/psalm '--no-cache' '--php-version=$major.$minor'",
                                 1 => "say 'Psalm : failing'",
                             },
                             $command->toString(),
@@ -371,9 +377,11 @@ class PsalmTest extends TestCase
                 ->mountFilesystemVia(static fn() => Attempt::result($adapter))
                 ->useServerControl(Server::via(
                     function($command) use (&$count) {
+                        $major = \PHP_MAJOR_VERSION;
+                        $minor = \PHP_MINOR_VERSION;
                         $this->assertSame(
                             match ($count) {
-                                0 => "vendor/bin/psalm '--no-cache'",
+                                0 => "vendor/bin/psalm '--no-cache' '--php-version=$major.$minor'",
                             },
                             $command->toString(),
                         );

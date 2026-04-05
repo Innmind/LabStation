@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Psalm is now run with the current PHP version as the target one (instead of the minimal one defined in `composer.json`)
+
 ## 4.3.1 - 2026-02-28
 
 ### Fixed
