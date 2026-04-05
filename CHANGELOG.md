@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## 4.4.0 - 2026-04-05
 
 ### Changed
 
