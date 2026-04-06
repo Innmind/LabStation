@@ -84,7 +84,8 @@ final class BlackBox implements Trigger
                 ['PATH', 'LC_TERMINAL'],
                 true,
             ))
-            ->put('LAB_STATION', 'true');
+            ->put('LAB_STATION', 'true')
+            ->put('BLACKBOX_ENV', 'lab_station');
 
         return $os
             ->control()

@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.5.0 - 2026-04-06
+
+### Changed
+
+- BlackBox has now access to a new `BLACKBOX_ENV` environment variable
+
 ## 4.4.0 - 2026-04-05
 
 ### Changed
