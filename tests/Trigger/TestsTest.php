@@ -140,7 +140,7 @@ class TestsTest extends TestCase
                                 $this->assertSame(
                                     match ($count) {
                                         0 => "vendor/bin/phpunit '--colors=always' '--fail-on-warning'",
-                                        1 => "say 'PHPUnit : ok'",
+                                        1 => "say '-v' 'Daniel' 'PHPUnit : ok'",
                                     },
                                     $command->toString(),
                                 );
@@ -274,7 +274,7 @@ class TestsTest extends TestCase
                         $this->assertSame(
                             match ($count) {
                                 0 => "vendor/bin/phpunit '--colors=always' '--fail-on-warning'",
-                                1 => "say 'PHPUnit : ok'",
+                                1 => "say '-v' 'Daniel' 'PHPUnit : ok'",
                             },
                             $command->toString(),
                         );
@@ -345,7 +345,7 @@ class TestsTest extends TestCase
                         $this->assertSame(
                             match ($count) {
                                 0 => "vendor/bin/phpunit '--colors=always' '--fail-on-warning'",
-                                1 => "say 'PHPUnit : failing'",
+                                1 => "say '-v' 'Daniel' 'PHPUnit : failing'",
                             },
                             $command->toString(),
                         );
