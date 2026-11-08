@@ -1,6 +1,6 @@
 # Lab Station
 
-[![CI](https://github.com/Innmind/LabStation/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Innmind/LabStation/actions/workflows/ci.yml)
+[![CI](https://github.com/Innmind/LabStation/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Innmind/LabStation/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/Innmind/LabStation/branch/develop/graph/badge.svg)](https://codecov.io/gh/Innmind/LabStation)
 [![Type Coverage](https://shepherd.dev/github/Innmind/LabStation/coverage.svg)](https://shepherd.dev/github/Innmind/LabStation)
 
