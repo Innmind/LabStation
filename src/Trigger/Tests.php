@@ -8,6 +8,7 @@ use Innmind\LabStation\{
     Triggers,
     Activity,
     Iteration,
+    Say,
 };
 use Innmind\CLI\Console;
 use Innmind\OperatingSystem\OperatingSystem;
@@ -134,7 +135,7 @@ final class Tests implements Trigger
             ->control()
             ->processes()
             ->execute(
-                Command::foreground('say')->withArgument(
+                Say::of(
                     'PHPUnit : '. match ($successful) {
                         true => 'ok',
                         false => 'failing',
