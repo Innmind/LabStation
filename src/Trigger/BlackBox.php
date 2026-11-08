@@ -8,6 +8,7 @@ use Innmind\LabStation\{
     Triggers,
     Activity,
     Iteration,
+    Say,
 };
 use Innmind\OperatingSystem\OperatingSystem;
 use Innmind\CLI\Console;
@@ -140,7 +141,7 @@ final class BlackBox implements Trigger
             ->control()
             ->processes()
             ->execute(
-                Command::foreground('say')->withArgument(
+                Say::of(
                     'BlackBox : '. match ($successful) {
                         true => 'ok',
                         false => 'failing',

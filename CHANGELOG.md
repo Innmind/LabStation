@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Results are now announced with the UK voice Daniel (instead of the system wide one)
+
 ## 4.5.0 - 2026-04-06
 
 ### Changed

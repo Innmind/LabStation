@@ -171,7 +171,7 @@ class CodingStandardTest extends TestCase
                                 $this->assertSame(
                                     match ($count) {
                                         0 => "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
-                                        1 => "say 'Coding Standard : right'",
+                                        1 => "say '-v' 'Daniel' 'Coding Standard : right'",
                                     },
                                     $command->toString(),
                                 );
@@ -249,7 +249,7 @@ class CodingStandardTest extends TestCase
                         $this->assertSame(
                             match ($count) {
                                 0 => "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
-                                1 => "say 'Coding Standard : right'",
+                                1 => "say '-v' 'Daniel' 'Coding Standard : right'",
                             },
                             $command->toString(),
                         );
@@ -320,7 +320,7 @@ class CodingStandardTest extends TestCase
                         $this->assertSame(
                             match ($count) {
                                 0 => "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run'",
-                                1 => "say 'Coding Standard : right'",
+                                1 => "say '-v' 'Daniel' 'Coding Standard : right'",
                             },
                             $command->toString(),
                         );
@@ -397,7 +397,7 @@ class CodingStandardTest extends TestCase
                         $this->assertSame(
                             match ($count) {
                                 0 => "vendor/bin/php-cs-fixer 'fix' '--diff' '--dry-run' '--diff-format' 'udiff'",
-                                1 => "say 'Coding Standard : wrong'",
+                                1 => "say '-v' 'Daniel' 'Coding Standard : wrong'",
                             },
                             $command->toString(),
                         );

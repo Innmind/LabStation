@@ -143,7 +143,7 @@ class BlackBoxTest extends TestCase
                                 $this->assertSame(
                                     match ($count) {
                                         0 => "php 'blackbox.php'",
-                                        1 => "say 'BlackBox : ok'",
+                                        1 => "say '-v' 'Daniel' 'BlackBox : ok'",
                                     },
                                     $command->toString(),
                                 );
@@ -275,7 +275,7 @@ class BlackBoxTest extends TestCase
                         $this->assertSame(
                             match ($count) {
                                 0 => "php 'blackbox.php'",
-                                1 => "say 'BlackBox : ok'",
+                                1 => "say '-v' 'Daniel' 'BlackBox : ok'",
                             },
                             $command->toString(),
                         );
@@ -346,7 +346,7 @@ class BlackBoxTest extends TestCase
                         $this->assertSame(
                             match ($count) {
                                 0 => "php 'blackbox.php'",
-                                1 => "say 'BlackBox : failing'",
+                                1 => "say '-v' 'Daniel' 'BlackBox : failing'",
                             },
                             $command->toString(),
                         );

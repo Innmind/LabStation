@@ -152,7 +152,7 @@ class PsalmTest extends TestCase
                         $this->assertSame(
                             match ($count) {
                                 0 => "vendor/bin/psalm '--no-cache' '--php-version=$major.$minor'",
-                                1 => "say 'Psalm : ok'",
+                                1 => "say '-v' 'Daniel' 'Psalm : ok'",
                             },
                             $command->toString(),
                         );
@@ -233,7 +233,7 @@ class PsalmTest extends TestCase
                         $this->assertSame(
                             match ($count) {
                                 0 => "vendor/bin/psalm '--no-cache' '--php-version=$major.$minor'",
-                                1 => "say 'Psalm : ok'",
+                                1 => "say '-v' 'Daniel' 'Psalm : ok'",
                             },
                             $command->toString(),
                         );
@@ -306,7 +306,7 @@ class PsalmTest extends TestCase
                         $this->assertSame(
                             match ($count) {
                                 0 => "vendor/bin/psalm '--no-cache' '--php-version=$major.$minor'",
-                                1 => "say 'Psalm : failing'",
+                                1 => "say '-v' 'Daniel' 'Psalm : failing'",
                             },
                             $command->toString(),
                         );
